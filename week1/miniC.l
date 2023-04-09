@@ -1,3 +1,9 @@
+/* Mikey Mauricio 
+ lex file 
+CS57 
+Wk1 Project 4/9/2023
+*/
+
 %{
 	#include <stdio.h>
 	#include "y.tab.h"
@@ -5,8 +11,10 @@
   void yyerror(char *);
 %}
 
-digit [1-9][0-9]+
+/* for digits */
+digit [1-9][0-9+]
 
+/* for letters */ 
 letter [a-z]
 
 
@@ -24,10 +32,16 @@ letter [a-z]
 "read"            { printf("%s", yytext); return READ; }
 
 
+
 {letter}+	{   
                       printf("%s", yytext);
                       return ID;
                   }
+                  
+{letter}+{digit}+	{   
+                      printf("%s", yytext);
+                      return ID;
+          }
 
 
 {digit}+      		{   
@@ -35,22 +49,22 @@ letter [a-z]
                       return NUM;
                   }
 
-[-()<>=+*/;.] { 
+0                 {
+                      printf("%s", yytext);
+                      return NUM; 
+                  }
+
+[-()<>=+*/;.]     { 
                       printf("%s", yytext); 
                       return yytext[0];;
-                  
-                }
+                  }
 
-"{"         { printf("%s", yytext); return yytext[0];}
-"}"          { printf("%s", yytext); return yytext[0]; }
-"<="        { printf("%s", yytext); return LE; }
-">="        { printf("%s", yytext); return GE; }
-"=="        { printf("%s", yytext); return EQ; }
-"!="        { printf("%s", yytext); return NE; }
-
-
-
-
+"{"               { printf("%s", yytext); return yytext[0];}
+"}"               { printf("%s", yytext); return yytext[0]; }
+"<="              { printf("%s", yytext); return LE; }
+">="              { printf("%s", yytext); return GE; }
+"=="              { printf("%s", yytext); return EQ; }
+"!="              { printf("%s", yytext); return NE; }
 
 
 [ \t\n]+    {printf("%s", yytext);}
@@ -60,6 +74,7 @@ letter [a-z]
 
 int yywrap(void){
 	return 1;
+
 }
 
 
