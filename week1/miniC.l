@@ -33,15 +33,15 @@ letter [a-z]
 
 
 
-{letter}+	{   
+{letter}+	        {   
                       printf("%s", yytext);
                       return ID;
                   }
                   
-{letter}+[0-9]+	{   
+{letter}+[0-9]+	  {   
                       printf("%s", yytext);
                       return ID;
-          }
+                  }
 
 
 {digit}+      		{   
@@ -53,7 +53,8 @@ letter [a-z]
                       printf("%s", yytext);
                       return NUM; 
                   }
-[0-9]+                 {
+
+[0-9]+            {
                       printf("%s", yytext);
                       return NUM; 
                   }
@@ -71,7 +72,7 @@ letter [a-z]
 "!="              { printf("%s", yytext); return NE; }
 
 
-[ \t\n]+    {printf("%s", yytext);}
+[ \t\n]+          { printf("%s", yytext); }
 
 %%
 

@@ -841,7 +841,7 @@ YY_RULE_SETUP
 {   
                       printf("%s", yytext);
                       return ID;
-          }
+                  }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
@@ -861,7 +861,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 56 "miniC.l"
+#line 57 "miniC.l"
 {
                       printf("%s", yytext);
                       return NUM; 
@@ -869,7 +869,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 61 "miniC.l"
+#line 62 "miniC.l"
 { 
                       printf("%s", yytext); 
                       return yytext[0];;
@@ -877,43 +877,43 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 66 "miniC.l"
+#line 67 "miniC.l"
 { printf("%s", yytext); return yytext[0];}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 67 "miniC.l"
+#line 68 "miniC.l"
 { printf("%s", yytext); return yytext[0]; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 68 "miniC.l"
+#line 69 "miniC.l"
 { printf("%s", yytext); return LE; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 69 "miniC.l"
+#line 70 "miniC.l"
 { printf("%s", yytext); return GE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 70 "miniC.l"
+#line 71 "miniC.l"
 { printf("%s", yytext); return EQ; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 71 "miniC.l"
+#line 72 "miniC.l"
 { printf("%s", yytext); return NE; }
 	YY_BREAK
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 74 "miniC.l"
-{printf("%s", yytext);}
+#line 75 "miniC.l"
+{ printf("%s", yytext); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 76 "miniC.l"
+#line 77 "miniC.l"
 ECHO;
 	YY_BREAK
 #line 920 "lex.yy.c"
@@ -1921,7 +1921,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 76 "miniC.l"
+#line 77 "miniC.l"
 
 
 

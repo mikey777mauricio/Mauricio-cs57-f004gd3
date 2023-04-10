@@ -98,7 +98,7 @@ expr : term
     | '(' expr ')'
     ;
 
-
+// took out declaration and declarations
     
 term : ID 
     | NUM
