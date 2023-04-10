@@ -12,7 +12,7 @@ Wk1 Project 4/9/2023
 %}
 
 /* for digits */
-digit [1-9][0-9+]
+digit [1-9][0-9]+
 
 /* for letters */ 
 letter [a-z]
@@ -38,7 +38,7 @@ letter [a-z]
                       return ID;
                   }
                   
-{letter}+{digit}+	{   
+{letter}+[0-9]+	{   
                       printf("%s", yytext);
                       return ID;
           }
@@ -50,6 +50,10 @@ letter [a-z]
                   }
 
 0                 {
+                      printf("%s", yytext);
+                      return NUM; 
+                  }
+[0-9]+                 {
                       printf("%s", yytext);
                       return NUM; 
                   }

@@ -63,7 +63,7 @@ blocks: blocks block
       ;
 
 // block of code
-block : '{' declarations statements '}'
+block : '{' statements '}'
     ;
 
 // statements
@@ -78,13 +78,14 @@ statement : ID '=' expr ';'
     | PRINT expr ';'
     | IF '(' expr ')' statement %prec IFX 
     | IF '(' expr ')' statement ELSE statement
-    | WHILE '(' expr ')' block
+    | WHILE '(' expr ')' statement
     | RETURN '(' expr ')' ';' 
     | '{' statements '}'
     ;
     
 // expressions   
 expr : term
+    | INT ID 
     | expr '+' expr 
     | expr '*' expr 
     | expr '/' expr 
@@ -97,14 +98,7 @@ expr : term
     | '(' expr ')'
     ;
 
-// declarations
-declarations : declarations declaration
-    |
-    ;
 
-// declaration  
-declaration : INT ID ';'
-    ;
     
 term : ID 
     | NUM
