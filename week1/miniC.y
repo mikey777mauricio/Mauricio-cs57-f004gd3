@@ -1,7 +1,11 @@
 %{
+#include "ast.h"
 #include <stdio.h>
+#include <cstddef>
+#include <vector>
+using namespace std;
 void yyerror(char *);
-extern int yylex();
+extern int yylex(void);
 extern int yylex_destroy();
 extern FILE *yyin;
 extern int yylineno;
@@ -9,11 +13,19 @@ extern char* yytext;
 %}
 
 
+%union {
+  int iVal; 
+  char* sName; 
+  astNode* nptr;
+  std::vector<astNode*> *stmt_list;
+
+};
+
+
 // defining tokens 
-%token NUM
-%token  ID
-%token WHILE IF PRINT EXTERN RETURN VOID INT READ ELSE
-%token LE GE EQ NE
+%token <iVal> NUM
+%token <sName> ID PRINT READ
+%token WHILE IF EXTERN RETURN VOID INT ELSE
 
 // left-associatives 
 %left GE LE EQ NE '>' '<'
@@ -26,6 +38,10 @@ extern char* yytext;
 %nonassoc IFX
 %nonassoc ELSE
 
+%type <nptr> program header function_def block
+%type <nptr> statement expr term declaration
+%type <stmt_list> declarations statements
+
 // start 
 %start program
 
@@ -33,82 +49,94 @@ extern char* yytext;
 %%
 
 // program with headers and functions
-program : headers functions
-        | functions
-        ;
+program : header header function_def { 
+                                        $$ = createProg($1, $2, $3); 
+                                        printNode($$); 
+                                        freeNode($$); 
 
-// headers
-headers : headers header
-        | header 
+                                      }
         ;
 
 // header 
-header : EXTERN VOID PRINT '(' INT ')' ';'
-        | EXTERN INT READ '(' ')' ';'
+header : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
+        | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
         ;
 
-// functions 
-functions : functions function 
-        | function
-        ;
+function_def : INT ID '(' INT ID ')'  block { $$ = createFunc($2, createVar($5), $7); }
+        | INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
 
-// function 
-function : INT ID '(' INT ID ')' blocks
-        | INT ID '(' ')' blocks
-        ;
 
-// blocks 
-blocks: blocks block  
-      | block
-      ;
 
-// block of code
-block : '{' statements '}'
-    ;
+block : '{' declarations statements '}' { 
+                                          for(int i = 0; i < $3->size(); i++){
+                                              $2->push_back((*$3)[i]);
+
+                                          }
+                                          
+                                          $$ = createBlock($2);
+                                        
+                                        }
 
 // statements
-statements : statements statement 
-    | statement 
+statements : statements statement {
+                                    $1->push_back($2);
+                                    $$ = $1;
+                                  } 
+    | statement                   { 
+                                    $$ = new std::vector<astNode*>();
+                                    $$->push_back($1); 
+                                  }
     ;
     
 // statement 
-statement : ID '=' expr ';'
-    | expr ';'
-    | ID '=' READ '(' ')' ';'
-    | PRINT expr ';'
-    | IF '(' expr ')' statement %prec IFX 
-    | IF '(' expr ')' statement ELSE statement
-    | WHILE '(' expr ')' statement
-    | RETURN '(' expr ')' ';' 
-    | '{' statements '}'
+statement : expr '=' expr ';' { $$ = createAsgn($1, $3); }
+    | expr ';' { $$ = $1; }
+    | expr '=' READ '(' ')' ';' { 
+                                    astNode* call = createCall($3);
+                                    $$ = createAsgn($1, call); 
+                                }
+    | PRINT expr ';' { $$ = createCall($1, $2); }
+    | IF '(' expr ')' statement %prec IFX { $$ = createIf($3, $5); }
+    | IF '(' expr ')' statement ELSE statement { $$ = createIf($3, $5, $7); }
+    | WHILE '(' expr ')' statement { $$ = createWhile($3, $5); } 
+    | RETURN '(' expr ')' ';' { $$ = createRet($3); }
+    | block { $$ = $1; }
     ;
     
 // expressions   
-expr : term
-    | INT ID 
-    | expr '+' expr 
-    | expr '*' expr 
-    | expr '/' expr 
-    | expr '<' expr %prec GE
-    | expr '>' expr %prec LE
-    | expr EQ expr 
-    | expr NE expr 
-    | expr LE expr 
-    | expr GE expr 
-    | '(' expr ')'
+expr : term { $$ = $1; }
+    |'-' term %prec UMINUS { $$ = createUExpr($2, uminus); }
+    | expr '+' expr  { $$ = createBExpr($1, $3, add); }
+    | expr '-' expr  { $$ = createBExpr($1, $3, sub); }
+    | expr '*' expr  { $$ = createBExpr($1, $3, mul); }
+    | expr '/' expr  { $$ = createBExpr($1, $3, divide); }
+    | expr '<' expr %prec GE { $$ = createRExpr($1, $3, lt); }
+    | expr '>' expr %prec LE { $$ = createRExpr($1, $3, gt); }
+    | expr EQ expr { $$ = createRExpr($1, $3, eq); }
+    | expr NE expr { $$ = createRExpr($1, $3, neq); }
+    | expr LE expr { $$ = createRExpr($1, $3, le); }
+    | expr GE expr { $$ = createRExpr($1, $3, ge); }
+    | '(' expr ')' { $$ = $2; }
     ;
 
 // took out declaration and declarations
+declarations : declarations declaration { 
+                                          $1->push_back($2);
+                                          $$ = $1;                          
+                                        }
+    | { $$ = new std::vector<astNode*>(); }
+
+declaration : INT ID ';' { $$ = createDecl($2); }
     
-term : ID 
-    | NUM
+term : ID { $$ = createVar($1); }
+    | NUM { $$ = createCnst($1); }
 
 %%
 
 int main(int argc, char** argv){
   // to read file name as argument
 	if (argc == 2){
-  	yyin = fopen(argv[1], "r");
+  	yyin = fopen(argv[1], "r"); 
 		yyparse();
   	fclose(yyin);
 	}

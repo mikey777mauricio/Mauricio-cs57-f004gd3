@@ -5,9 +5,9 @@ Wk1 Project 4/9/2023
 */
 
 %{
+  #include "ast.h"
 	#include <stdio.h>
 	#include "y.tab.h"
-  extern int yylval;
   void yyerror(char *);
 %}
 
@@ -35,27 +35,32 @@ letter [a-z]
 
 {letter}+	        {   
                       printf("%s", yytext);
+                      yylval.sName = yytext;
                       return ID;
                   }
                   
 {letter}+[0-9]+	  {   
                       printf("%s", yytext);
+                      yylval.sName = yytext;
                       return ID;
                   }
 
 
 {digit}+      		{   
                       printf("%s", yytext);
+                      yylval.iVal = atoi(yytext);
                       return NUM;
                   }
 
 0                 {
                       printf("%s", yytext);
+                      yylval.iVal = atoi(yytext);
                       return NUM; 
                   }
 
 [0-9]+            {
                       printf("%s", yytext);
+                      yylval.iVal = atoi(yytext);
                       return NUM; 
                   }
 
@@ -73,6 +78,8 @@ letter [a-z]
 
 
 [ \t\n]+          { printf("%s", yytext); }
+
+
 
 %%
 
