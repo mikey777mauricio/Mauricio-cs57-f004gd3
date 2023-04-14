@@ -95,7 +95,8 @@ statements : statements statement {
 
                                   } 
     | statement                   { 
-                                    $$ = new std::vector<astNode*>();
+                                    vector<astNode*> *slist;
+	                                  $$ = new vector<astNode*> ();
                             
                                     $$->push_back($1);
                                   }
@@ -150,7 +151,8 @@ declarations : declarations declaration {
                                           $$ = $1;    
                                                                 
                                         }
-    | { $$ = new std::vector<astNode*>(); }
+    | { vector<astNode*> *slist;
+	      $$ = new vector<astNode*> (); }
 
 declaration : INT ID ';' { $$ = createDecl($2); }
     
@@ -175,5 +177,3 @@ int main(int argc, char** argv){
 void yyerror(const char *s){
 	fprintf(stdout, "Syntax error %d\n", yylineno);
 }
-
-
