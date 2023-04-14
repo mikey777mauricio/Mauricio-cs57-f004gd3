@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <vector>
 using namespace std;
-void yyerror(char *);
+void yyerror(const char *);
 extern int yylex(void);
 extern int yylex_destroy();
 extern FILE *yyin;
@@ -38,7 +38,7 @@ extern char* yytext;
 %nonassoc IFX
 %nonassoc ELSE
 
-%type <nptr> program header function_def block
+%type <nptr> program extern function_def block
 %type <nptr> statement expr term declaration
 %type <stmt_list> declarations statements
 
@@ -49,7 +49,7 @@ extern char* yytext;
 %%
 
 // program with headers and functions
-program : header header function_def { 
+program : extern extern function_def { 
                                         $$ = createProg($1, $2, $3); 
                                         printNode($$); 
                                         freeNode($$); 
@@ -57,50 +57,73 @@ program : header header function_def {
                                       }
         ;
 
-// header 
-header : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
+// extern 
+extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
         | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
         ;
 
-function_def : INT ID '(' INT ID ')'  block { $$ = createFunc($2, createVar($5), $7); }
+function_def : INT ID '(' INT ID ')'  block { astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
         | INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
 
 
 
 block : '{' declarations statements '}' { 
-                                          for(int i = 0; i < $3->size(); i++){
+
+                                          for(int i = 0; i < (*$3).size(); i++){
                                               $2->push_back((*$3)[i]);
+
 
                                           }
                                           
+                                          delete $3;
+                            
                                           $$ = createBlock($2);
-                                        
+
+                                      
+                                    
                                         }
 
 // statements
 statements : statements statement {
                                     $1->push_back($2);
+              
+
                                     $$ = $1;
+
+
+                             
+
                                   } 
     | statement                   { 
                                     $$ = new std::vector<astNode*>();
-                                    $$->push_back($1); 
+                            
+                                    $$->push_back($1);
                                   }
     ;
     
 // statement 
-statement : expr '=' expr ';' { $$ = createAsgn($1, $3); }
+statement : expr '=' expr ';' {   
+                                $$ = createAsgn($1, $3); 
+                              }
     | expr ';' { $$ = $1; }
     | expr '=' READ '(' ')' ';' { 
                                     astNode* call = createCall($3);
                                     $$ = createAsgn($1, call); 
                                 }
-    | PRINT expr ';' { $$ = createCall($1, $2); }
-    | IF '(' expr ')' statement %prec IFX { $$ = createIf($3, $5); }
-    | IF '(' expr ')' statement ELSE statement { $$ = createIf($3, $5, $7); }
-    | WHILE '(' expr ')' statement { $$ = createWhile($3, $5); } 
+    | PRINT expr ';'            { 
+                                    $$ = createCall($1, $2);                                  
+                                }
+    | IF '(' expr ')' statement %prec IFX { 
+                                            $$ = createIf($3, $5);                                          
+                                          }
+    | IF '(' expr ')' statement ELSE statement { 
+                                                $$ = createIf($3, $5, $7);                                                                                       
+                                                }
+    | WHILE '(' expr ')' statement { 
+                                    $$ = createWhile($3, $5);                               
+                                    } 
     | RETURN '(' expr ')' ';' { $$ = createRet($3); }
-    | block { $$ = $1; }
+    | block { $$ = $1;}
     ;
     
 // expressions   
@@ -121,8 +144,11 @@ expr : term { $$ = $1; }
 
 // took out declaration and declarations
 declarations : declarations declaration { 
+
                                           $1->push_back($2);
-                                          $$ = $1;                          
+                                          
+                                          $$ = $1;    
+                                                                
                                         }
     | { $$ = new std::vector<astNode*>(); }
 
@@ -146,7 +172,7 @@ int main(int argc, char** argv){
 	return 0;
 }
 
-void yyerror(char *s){
+void yyerror(const char *s){
 	fprintf(stdout, "Syntax error %d\n", yylineno);
 }
 

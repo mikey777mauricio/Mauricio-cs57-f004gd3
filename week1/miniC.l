@@ -8,7 +8,7 @@ Wk1 Project 4/9/2023
   #include "ast.h"
 	#include <stdio.h>
 	#include "y.tab.h"
-  void yyerror(char *);
+  void yyerror(const char *);
 %}
 
 /* for digits */

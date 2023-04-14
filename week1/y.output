@@ -2,9 +2,9 @@ Grammar
 
     0 $accept: program $end
 
-    1 program: header header function_def
+    1 program: extern extern function_def
 
-    2 header: EXTERN VOID PRINT '(' INT ')' ';'
+    2 extern: EXTERN VOID PRINT '(' INT ')' ';'
     3       | EXTERN INT READ '(' ')' ';'
 
     4 function_def: INT ID '(' INT ID ')' block
@@ -90,7 +90,7 @@ Nonterminals, with rules where they appear
     program <nptr> (33)
         on left: 1
         on right: 0
-    header <nptr> (34)
+    extern <nptr> (34)
         on left: 2 3
         on right: 1
     function_def <nptr> (35)
@@ -126,12 +126,12 @@ State 0
     EXTERN  shift, and go to state 1
 
     program  go to state 2
-    header   go to state 3
+    extern   go to state 3
 
 
 State 1
 
-    2 header: EXTERN . VOID PRINT '(' INT ')' ';'
+    2 extern: EXTERN . VOID PRINT '(' INT ')' ';'
     3       | EXTERN . INT READ '(' ')' ';'
 
     VOID  shift, and go to state 4
@@ -147,23 +147,23 @@ State 2
 
 State 3
 
-    1 program: header . header function_def
+    1 program: extern . extern function_def
 
     EXTERN  shift, and go to state 1
 
-    header  go to state 7
+    extern  go to state 7
 
 
 State 4
 
-    2 header: EXTERN VOID . PRINT '(' INT ')' ';'
+    2 extern: EXTERN VOID . PRINT '(' INT ')' ';'
 
     PRINT  shift, and go to state 8
 
 
 State 5
 
-    3 header: EXTERN INT . READ '(' ')' ';'
+    3 extern: EXTERN INT . READ '(' ')' ';'
 
     READ  shift, and go to state 9
 
@@ -177,7 +177,7 @@ State 6
 
 State 7
 
-    1 program: header header . function_def
+    1 program: extern extern . function_def
 
     INT  shift, and go to state 10
 
@@ -186,14 +186,14 @@ State 7
 
 State 8
 
-    2 header: EXTERN VOID PRINT . '(' INT ')' ';'
+    2 extern: EXTERN VOID PRINT . '(' INT ')' ';'
 
     '('  shift, and go to state 12
 
 
 State 9
 
-    3 header: EXTERN INT READ . '(' ')' ';'
+    3 extern: EXTERN INT READ . '(' ')' ';'
 
     '('  shift, and go to state 13
 
@@ -208,21 +208,21 @@ State 10
 
 State 11
 
-    1 program: header header function_def .
+    1 program: extern extern function_def .
 
     $default  reduce using rule 1 (program)
 
 
 State 12
 
-    2 header: EXTERN VOID PRINT '(' . INT ')' ';'
+    2 extern: EXTERN VOID PRINT '(' . INT ')' ';'
 
     INT  shift, and go to state 15
 
 
 State 13
 
-    3 header: EXTERN INT READ '(' . ')' ';'
+    3 extern: EXTERN INT READ '(' . ')' ';'
 
     ')'  shift, and go to state 16
 
@@ -237,14 +237,14 @@ State 14
 
 State 15
 
-    2 header: EXTERN VOID PRINT '(' INT . ')' ';'
+    2 extern: EXTERN VOID PRINT '(' INT . ')' ';'
 
     ')'  shift, and go to state 18
 
 
 State 16
 
-    3 header: EXTERN INT READ '(' ')' . ';'
+    3 extern: EXTERN INT READ '(' ')' . ';'
 
     ';'  shift, and go to state 19
 
@@ -260,16 +260,16 @@ State 17
 
 State 18
 
-    2 header: EXTERN VOID PRINT '(' INT ')' . ';'
+    2 extern: EXTERN VOID PRINT '(' INT ')' . ';'
 
     ';'  shift, and go to state 22
 
 
 State 19
 
-    3 header: EXTERN INT READ '(' ')' ';' .
+    3 extern: EXTERN INT READ '(' ')' ';' .
 
-    $default  reduce using rule 3 (header)
+    $default  reduce using rule 3 (extern)
 
 
 State 20
@@ -290,9 +290,9 @@ State 21
 
 State 22
 
-    2 header: EXTERN VOID PRINT '(' INT ')' ';' .
+    2 extern: EXTERN VOID PRINT '(' INT ')' ';' .
 
-    $default  reduce using rule 2 (header)
+    $default  reduce using rule 2 (extern)
 
 
 State 23
