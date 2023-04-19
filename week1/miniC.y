@@ -71,7 +71,7 @@ extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
         | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
         ;
 
-function_def : INT ID '(' INT ID ')'  statement { printf("TEST:%s\n", $5); astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
+function_def : INT ID '(' INT ID ')'  statement { astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
         | INT ID '(' ')' statement { $$ = createFunc($2, NULL, $5); }
 
 

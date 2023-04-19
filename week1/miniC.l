@@ -13,59 +13,40 @@ Wk1 Project 4/9/2023
   
 %}
 
-/* for digits */
-digit [1-9][0-9]+
-
-/* for letters */ 
-letter [a-z]
-
-
 %%
 
-
-"if"              { printf("%s", yytext); return IF; }
-"else"            { printf("%s", yytext); return ELSE; }
-"while"           { printf("%s", yytext); return WHILE; }
-
-"extern"          { printf("%s", yytext); return EXTERN; }
-"print"           { printf("%s", yytext); return PRINT; }
-"return"          { printf("%s", yytext); return RETURN; }
-"void"            { printf("%s", yytext); return VOID; }
-"int"             { printf("%s", yytext); return INT; }
-"read"            { printf("%s", yytext); return READ; }
-
+"if"                    { return IF; }
+"else"                  { return ELSE; }
+"while"                 { return WHILE; }
+"extern"                { return EXTERN; }
+"print"                 { return PRINT; }
+"return"                { return RETURN; }
+"void"                  { return VOID; }
+"int"                   { return INT; }
+"read"                  { return READ; }
 
 [a-z][a-zA-Z0-9_]*      {             
-                          yylval.sName = strdup(yytext);
-                          printf("%s", yytext);
+                          yylval.sName = strdup(yytext);         
                           return ID;
                         }
 
-              
+0|[1-9][0-9]*      		  { 
+                          yylval.iVal = atoi(yytext);
+                          return NUM;
+                        }
 
-0|[1-9][0-9]*      		{   
-                      printf("%s", yytext);
-                      yylval.iVal = atoi(yytext);
-                      return NUM;
-                  }
-[-<>=+/*{}.]     { 
-                      printf("%s", yytext); 
-                      return yytext[0];
-                  }
-"("              { printf("%s", yytext); return yytext[0]; }
-")"             { printf("%s", yytext); return yytext[0]; }
-";"              { printf("%s", yytext); return yytext[0]; }
-"<="              { printf("%s", yytext); return LE; }
-">="              { printf("%s", yytext); return GE; }
-"=="              { printf("%s", yytext); return EQ; }
-"!="              { printf("%s", yytext); return NE; }
+[-<>=+/*{}.]            { return yytext[0]; }
+"("                     { return yytext[0]; }
+")"                     { return yytext[0]; }
+";"                     { return yytext[0]; }
+"<="                    { return LE; }
+">="                    { return GE; }
+"=="                    { return EQ; }
+"!="                    { return NE; }
 
-[  \t\n]+          { printf("%s", yytext);}
-
-
+[  \t\n]+          {}
 
 %%
-
 
 int yywrap(void){
 	return 1;

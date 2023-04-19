@@ -28,7 +28,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
   {
     // block
     case ast_block: {
-      printf("block\n");
       // new vector to represent symbol table 
       vector<char*> *new_list;
       new_list = new vector<char*> ();
@@ -53,7 +52,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // call
     case ast_call: {
-      printf("call\n");
       // if function has param 
       if (stmt->call.param != NULL){
         // anaylze param 
@@ -65,7 +63,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // while
     case ast_while:{
-      printf("while\n");
       // analyze condition 
       analyze_helper(stmt->whilen.cond, s, s_table);
       // analyze body 
@@ -75,7 +72,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // if 
     case ast_if: {
-      printf("if\n");
       // analyze condition 
       analyze_helper(stmt->ifn.cond, s, s_table);
       // analyze body 
@@ -91,7 +87,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // assignment
     case ast_asgn: {
-      printf("asgn\n");
       // analyze lhs 
       analyze_helper(stmt->asgn.lhs, s, s_table);
       // analyze rhs 
@@ -101,10 +96,8 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // declaration
     case ast_decl: {
-      printf("decl\n");
       // extract ID
       char* new_id = stmt->decl.name; 
-      printf("added %s\n", new_id);
       // push ID onto symbol table 
       s_table->push_back(new_id);
       break;
@@ -112,7 +105,6 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
     }
     // return
     case ast_ret: {
-      printf("ret\n");
       // analyze expr 
       analyze_helper(stmt->ret.expr, s, s_table);
       break;
@@ -138,7 +130,6 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // extern
     case ast_extern: {
-      printf("extern\n");
       // extract ID
       char* ext_id = node->ext.name; 
       // push onto symbol table 
@@ -148,14 +139,12 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // func
     case ast_func:{
-      printf("func\n");
       // if func has param 
       if (node->func.param != NULL) {
         // extract var node 
         astNode* var = node->func.param;
         // add ID onto symbol table 
         s_table->push_back(var->var.name);
-        printf("added parameter\n");
       }
       // analyze func body 
       analyze_helper(node->func.body, s, s_table);
@@ -164,7 +153,6 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // var 
     case ast_var: {
-      printf("var\n");
       // found boolean 
       bool found = false; 
       // iterate through vector of symbol tables 
@@ -173,10 +161,8 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
         vector<char*> *list = (*s)[i];
         // iterate through table 
         for(int j = 0; j < (int)list->size(); j++){
-          printf("looking for: %s, var: %s\n", node->var.name, (*list)[j]);
           // if found 
           if (strcmp(node->var.name, (*list)[j]) == 0){
-            printf("found %s\n", node->var.name);
             // set found to true 
             found = true; 
             break; 
@@ -203,7 +189,6 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // rexpr
     case ast_rexpr: {
-      printf("rexp\n");
       // analyze lhs 
       analyze_helper(node->rexpr.lhs, s, s_table);
       // analyze rhs 
@@ -213,7 +198,6 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // bexpr
     case ast_bexpr: {
-      printf("bexp\n");
       // analyze lhs 
       analyze_helper(node->bexpr.lhs, s, s_table);
       // analyze rhs 
@@ -223,7 +207,6 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // uexpr
     case ast_uexpr: {
-      printf("uexp\n");
       // analyze expr 
       analyze_helper(node->uexpr.expr, s, s_table);
       break; 
@@ -253,5 +236,9 @@ void analyze_node(astNode* root){
   //free 
   delete slist;
   delete s; 
+  // print statment 
+  printf("NO syntax errors :)\n");
+  // exit 0
+  exit(0);
 
 }
