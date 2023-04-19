@@ -59,22 +59,19 @@ extern void analyze_helper(astNode* node, stack<vector<char*>*> *s, vector<char*
 program : extern extern function_def { 
                                         $$ = createProg($1, $2, $3); 
                                         root = $$;
-                  
                                         analyze_node($$);
-                                        freeNode($$); 
-
+                                      
                                       }
         ;
 
 // extern 
-extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
-        | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
+extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print");  }
+        | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read");  }
         ;
 
-function_def : INT ID '(' INT ID ')'  statement { astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
-        | INT ID '(' ')' statement { $$ = createFunc($2, NULL, $5); }
-
-
+function_def : INT ID '(' INT ID ')'  statement { astNode* var = createVar($5); $$ = createFunc($2, var, $7);  }
+        | INT ID '(' ')' statement {  $$ = createFunc($2, NULL, $5); }
+        ;
 
 block : '{' declarations statements '}' { 
 
@@ -86,6 +83,7 @@ block : '{' declarations statements '}' {
                                           $$ = createBlock($2);
 
                                         }
+      ;
 
 // statements
 statements : statements statement {
@@ -108,7 +106,7 @@ statement : expr '=' expr ';' {
                                     $$ = createAsgn($1, call); 
                                 }
     | PRINT expr ';'            { 
-                                    $$ = createCall($1, $2);                                  
+                                    $$ = createCall($1, $2);                                
                                 }
     | IF '(' expr ')' statement %prec IFX { 
                                             $$ = createIf($3, $5);                                          
@@ -147,7 +145,7 @@ declarations : declarations declaration {
                                         }
     | { $$ = new vector<astNode*> (); }
 
-declaration : INT ID ';' { $$ = createDecl($2); }
+declaration : INT ID ';' { $$ = createDecl($2); free(yylval.sName);}
     
 term : ID { $$ = createVar($1); }
     | NUM { $$ = createCnst($1); }

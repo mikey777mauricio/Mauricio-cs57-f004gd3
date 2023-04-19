@@ -139,15 +139,20 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
     }
     // func
     case ast_func:{
+      // new symbol table 
+      vector<char*> *new_list;
+      new_list = new vector<char*> ();
+      // push onto top 
+      s->push_back(new_list);
       // if func has param 
       if (node->func.param != NULL) {
         // extract var node 
         astNode* var = node->func.param;
         // add ID onto symbol table 
-        s_table->push_back(var->var.name);
+        new_list->push_back(var->var.name);
       }
       // analyze func body 
-      analyze_helper(node->func.body, s, s_table);
+      analyze_helper(node->func.body, s, new_list);
       break;
 
     }
@@ -238,7 +243,7 @@ void analyze_node(astNode* root){
   delete s; 
   // print statment 
   printf("NO syntax errors :)\n");
-  // exit 0
-  exit(0);
+  //f ree root
+  freeNode(root);
 
 }
