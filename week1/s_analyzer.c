@@ -37,13 +37,13 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
       // list of node
       vector<astNode*> slist = *(stmt->block.stmt_list);
       // iterator to iterate nodes
-			vector<astNode*>::iterator it = slist.begin();
+      vector<astNode*>::iterator it = slist.begin();
       // while not at end 
-			while (it != slist.end()){
+      while (it != slist.end()){
         // analye new node
-				analyze_helper(*it, s, new_list);
+        analyze_helper(*it, s, new_list);
         // increment 
-				it++;
+        it++;
 			
       }
       break;
