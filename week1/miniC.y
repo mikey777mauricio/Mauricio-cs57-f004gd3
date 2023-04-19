@@ -116,7 +116,7 @@ statement : expr '=' expr ';' {
     | IF '(' expr ')' statement ELSE statement { 
                                                 $$ = createIf($3, $5, $7);                                                                                       
                                                 }
-    | WHILE '(' expr ')' statement { 
+    | WHILE '(' expr ')' block { 
                                     $$ = createWhile($3, $5);                               
                                     } 
     | RETURN '(' expr ')' ';' { $$ = createRet($3); }

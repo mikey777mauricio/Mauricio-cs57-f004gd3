@@ -43,7 +43,7 @@ letter [a-z]
 
               
 
-0|[1-9][0-9]+      		{   
+0|[1-9][0-9]*      		{   
                       printf("%s", yytext);
                       yylval.iVal = atoi(yytext);
                       return NUM;

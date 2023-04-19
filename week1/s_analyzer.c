@@ -46,6 +46,8 @@ void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_tab
         it++;
 			
       }
+      delete new_list;
+      *s->erase(s->begin() + s->size()-1);
       break;
     
     }
@@ -183,7 +185,10 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
         }
       }
       // if not in scope or not declared, print syntax error 
-      if (!found) printf("syntax error, out of scope\n");
+      if (!found){
+        printf("syntax error, out of scope\n");
+        exit(1);
+      }
       break;
 
     }

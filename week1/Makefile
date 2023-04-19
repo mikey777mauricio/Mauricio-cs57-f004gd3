@@ -23,7 +23,8 @@ valgrind: ./miniC.out
 	$(VALGRIND) -s ./miniC.out ./tests/sample_miniC.c
 
 test: ./miniC.out
-	./miniC.out ./tests/p1.c
+	./miniC.out ./semantic_tests/p3.c
+
 	
 
 clean:

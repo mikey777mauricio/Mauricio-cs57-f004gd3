@@ -16,6 +16,7 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 #include <stdio.h>
+#include <stdlib.h>
 #include <cstddef>
 #include <vector>
 #include <string.h>
