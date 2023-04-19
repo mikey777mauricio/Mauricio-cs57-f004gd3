@@ -153,6 +153,7 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
       }
       // analyze func body 
       analyze_helper(node->func.body, s, new_list);
+      delete new_list; 
       break;
 
     }
