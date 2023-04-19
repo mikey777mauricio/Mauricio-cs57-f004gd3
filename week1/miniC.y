@@ -61,7 +61,7 @@ program : extern extern function_def {
                                         root = $$;
                   
                                         analyze_node($$);
-                                        /* freeNode($$); */
+                                        freeNode($$); 
 
                                       }
         ;
@@ -149,7 +149,7 @@ declarations : declarations declaration {
 
 declaration : INT ID ';' { $$ = createDecl($2); }
     
-term : ID { $$ = createVar($1);}
+term : ID { $$ = createVar($1); }
     | NUM { $$ = createCnst($1); }
 
 %%

@@ -250,5 +250,8 @@ void analyze_node(astNode* root){
   s->push_back(slist);
   // analyze root
   analyze_helper(root, s, slist);
+  //free 
+  delete slist;
+  delete s; 
 
 }

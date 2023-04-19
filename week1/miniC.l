@@ -35,11 +35,11 @@ letter [a-z]
 "read"            { printf("%s", yytext); return READ; }
 
 
-[a-z][a-zA-Z0-9_]* {
-                  yylval.sName = strdup(yytext);
-                  printf("%s", yytext);
-		 			        return ID;
-				}
+[a-z][a-zA-Z0-9_]*      {             
+                          yylval.sName = strdup(yytext);
+                          printf("%s", yytext);
+                          return ID;
+                        }
 
               
 
