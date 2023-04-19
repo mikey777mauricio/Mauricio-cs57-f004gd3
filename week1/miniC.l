@@ -8,7 +8,9 @@ Wk1 Project 4/9/2023
   #include "ast.h"
 	#include <stdio.h>
 	#include "y.tab.h"
+  #include <string.h>
   void yyerror(const char *);
+  
 %}
 
 /* for digits */
@@ -19,6 +21,7 @@ letter [a-z]
 
 
 %%
+
 
 "if"              { printf("%s", yytext); return IF; }
 "else"            { printf("%s", yytext); return ELSE; }
@@ -32,52 +35,32 @@ letter [a-z]
 "read"            { printf("%s", yytext); return READ; }
 
 
+[a-z][a-zA-Z0-9_]* {
+                  yylval.sName = strdup(yytext);
+                  printf("%s", yytext);
+		 			        return ID;
+				}
 
-{letter}+	        {   
-                      printf("%s", yytext);
-                      yylval.sName = yytext;
-                      return ID;
-                  }
-                  
-{letter}+[0-9]+	  {   
-                      printf("%s", yytext);
-                      yylval.sName = yytext;
-                      return ID;
-                  }
+              
 
-
-{digit}+      		{   
+0|[1-9][0-9]+      		{   
                       printf("%s", yytext);
                       yylval.iVal = atoi(yytext);
                       return NUM;
                   }
-
-0                 {
-                      printf("%s", yytext);
-                      yylval.iVal = atoi(yytext);
-                      return NUM; 
-                  }
-
-[0-9]+            {
-                      printf("%s", yytext);
-                      yylval.iVal = atoi(yytext);
-                      return NUM; 
-                  }
-
-[-()<>=+*/;.]     { 
+[-<>=+/*{}.]     { 
                       printf("%s", yytext); 
-                      return yytext[0];;
+                      return yytext[0];
                   }
-
-"{"               { printf("%s", yytext); return yytext[0];}
-"}"               { printf("%s", yytext); return yytext[0]; }
+"("              { printf("%s", yytext); return yytext[0]; }
+")"             { printf("%s", yytext); return yytext[0]; }
+";"              { printf("%s", yytext); return yytext[0]; }
 "<="              { printf("%s", yytext); return LE; }
 ">="              { printf("%s", yytext); return GE; }
 "=="              { printf("%s", yytext); return EQ; }
 "!="              { printf("%s", yytext); return NE; }
 
-
-[ \t\n]+          { printf("%s", yytext); }
+[  \t\n]+          { printf("%s", yytext);}
 
 
 

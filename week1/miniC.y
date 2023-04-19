@@ -1,15 +1,20 @@
 %{
 #include "ast.h"
+#include "s_analyzer.h"
 #include <stdio.h>
 #include <cstddef>
 #include <vector>
+#include <stack>
+#include <cassert>
 using namespace std;
 void yyerror(const char *);
 extern int yylex(void);
 extern int yylex_destroy();
 extern FILE *yyin;
 extern int yylineno;
-extern char* yytext;
+astNode* root; 
+extern void analyze_node(astNode*);
+extern void analyze_helper(astNode* node, stack<vector<char*>*> *s, vector<char*> *s_table);
 %}
 
 
@@ -17,15 +22,16 @@ extern char* yytext;
   int iVal; 
   char* sName; 
   astNode* nptr;
-  std::vector<astNode*> *stmt_list;
+  vector<astNode*> *stmt_list;
 
 };
 
 
 // defining tokens 
 %token <iVal> NUM
-%token <sName> ID PRINT READ
-%token WHILE IF EXTERN RETURN VOID INT ELSE
+%token <sName> ID PRINT READ 
+
+%token WHILE IF EXTERN RETURN VOID INT ELSE 
 
 // left-associatives 
 %left GE LE EQ NE '>' '<'
@@ -45,14 +51,17 @@ extern char* yytext;
 // start 
 %start program
 
+%debug
 
 %%
 
 // program with headers and functions
 program : extern extern function_def { 
                                         $$ = createProg($1, $2, $3); 
-                                        printNode($$); 
-                                        freeNode($$); 
+                                        root = $$;
+                  
+                                        analyze_node($$);
+                                        /* freeNode($$); */
 
                                       }
         ;
@@ -62,8 +71,8 @@ extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print"); }
         | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read"); }
         ;
 
-function_def : INT ID '(' INT ID ')'  block { astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
-        | INT ID '(' ')' block { $$ = createFunc($2, NULL, $5); }
+function_def : INT ID '(' INT ID ')'  statement { printf("TEST:%s\n", $5); astNode* var = createVar($5); $$ = createFunc($2, var, $7); }
+        | INT ID '(' ')' statement { $$ = createFunc($2, NULL, $5); }
 
 
 
@@ -72,32 +81,19 @@ block : '{' declarations statements '}' {
                                           for(int i = 0; i < (*$3).size(); i++){
                                               $2->push_back((*$3)[i]);
 
-
-                                          }
-                                          
-                                          delete $3;
-                            
+                                          }              
+                                          delete $3;                            
                                           $$ = createBlock($2);
 
-                                      
-                                    
                                         }
 
 // statements
 statements : statements statement {
                                     $1->push_back($2);
-              
-
-                                    $$ = $1;
-
-
-                             
-
+                                    $$ = $1;                             
                                   } 
-    | statement                   { 
-                                    vector<astNode*> *slist;
-	                                  $$ = new vector<astNode*> ();
-                            
+    | statement                   {                                   
+	                                  $$ = new vector<astNode*> ();                           
                                     $$->push_back($1);
                                   }
     ;
@@ -128,7 +124,7 @@ statement : expr '=' expr ';' {
     ;
     
 // expressions   
-expr : term { $$ = $1; }
+expr : term 
     |'-' term %prec UMINUS { $$ = createUExpr($2, uminus); }
     | expr '+' expr  { $$ = createBExpr($1, $3, add); }
     | expr '-' expr  { $$ = createBExpr($1, $3, sub); }
@@ -145,18 +141,15 @@ expr : term { $$ = $1; }
 
 // took out declaration and declarations
 declarations : declarations declaration { 
-
-                                          $1->push_back($2);
-                                          
+                                          $1->push_back($2);         
                                           $$ = $1;    
                                                                 
                                         }
-    | { vector<astNode*> *slist;
-	      $$ = new vector<astNode*> (); }
+    | { $$ = new vector<astNode*> (); }
 
 declaration : INT ID ';' { $$ = createDecl($2); }
     
-term : ID { $$ = createVar($1); }
+term : ID { $$ = createVar($1);}
     | NUM { $$ = createCnst($1); }
 
 %%
@@ -177,3 +170,5 @@ int main(int argc, char** argv){
 void yyerror(const char *s){
 	fprintf(stdout, "Syntax error %d\n", yylineno);
 }
+
+

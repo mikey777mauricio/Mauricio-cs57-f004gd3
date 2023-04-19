@@ -2,7 +2,7 @@ extern void print(int);
 extern int read();
 
 int func(int i){
-	int a;
+  int a;
 	int b;
 	
   if (a < i){
