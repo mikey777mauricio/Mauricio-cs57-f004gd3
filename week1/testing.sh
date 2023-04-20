@@ -2,7 +2,6 @@
 # Bash script tests semantic analysis module 
 # Mikey Mauricio    week1    April 18, 2023
 
-# test too many arguments
 make 
 
 echo "---------------------------"
