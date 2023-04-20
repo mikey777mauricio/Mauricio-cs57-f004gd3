@@ -1,6 +1,6 @@
 #!/bin/bash
-# bash script tests crawler.c
-# Mikey Mauricio    Lab3    January 30, 2023
+# Bash script tests semantic analysis module 
+# Mikey Mauricio    week1    April 18, 2023
 
 # test too many arguments
 make 
