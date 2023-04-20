@@ -229,11 +229,11 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
 void analyze_node(astNode* root){
   // initialize vector of vectors
   vector<vector<char*>*> *s;
-  // set s to new vector
+  // set s to new empty vector
   s = new vector<vector<char*>*> (); 
   // initialize vector of char*
   vector<char*> *slist;
-  // set slist to vecot
+  // set slist to empty vector
   slist = new vector<char*> (); 
   // push slist onto s 
   s->push_back(slist);

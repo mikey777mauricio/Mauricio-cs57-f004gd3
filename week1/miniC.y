@@ -29,9 +29,9 @@ extern void analyze_helper(astNode* node, stack<vector<char*>*> *s, vector<char*
 
 // defining tokens 
 %token <iVal> NUM
-%token <sName> ID PRINT READ 
+%token <sName> ID  
 
-%token WHILE IF EXTERN RETURN VOID INT ELSE 
+%token WHILE IF EXTERN  VOID INT ELSE READ RETURN PRINT
 
 // left-associatives 
 %left GE LE EQ NE '>' '<'
@@ -69,8 +69,8 @@ extern : EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern("print");  }
         | EXTERN INT READ '(' ')' ';' { $$ = createExtern("read");  }
         ;
 
-function_def : INT ID '(' INT ID ')'  statement { astNode* var = createVar($5); $$ = createFunc($2, var, $7);  }
-        | INT ID '(' ')' statement {  $$ = createFunc($2, NULL, $5); }
+function_def : INT ID '(' INT ID ')'  statement { astNode* var = createVar($5); $$ = createFunc($2, var, $7); free($2);  free($5);}
+        | INT ID '(' ')' statement {  $$ = createFunc($2, NULL, $5); free($2); }
         ;
 
 block : '{' declarations statements '}' { 
@@ -97,16 +97,14 @@ statements : statements statement {
     ;
     
 // statement 
-statement : expr '=' expr ';' {   
-                                $$ = createAsgn($1, $3); 
+statement : ID '=' expr ';' {   
+                                $$ = createAsgn(createVar($1), $3); 
+                                free($1);
                               }
     | expr ';' { $$ = $1; }
-    | expr '=' READ '(' ')' ';' { 
-                                    astNode* call = createCall($3);
-                                    $$ = createAsgn($1, call); 
-                                }
     | PRINT expr ';'            { 
-                                    $$ = createCall($1, $2);                                
+                                    $$ = createCall("print", $2);  
+                                                                 
                                 }
     | IF '(' expr ')' statement %prec IFX { 
                                             $$ = createIf($3, $5);                                          
@@ -135,6 +133,7 @@ expr : term
     | expr LE expr { $$ = createRExpr($1, $3, le); }
     | expr GE expr { $$ = createRExpr($1, $3, ge); }
     | '(' expr ')' { $$ = $2; }
+    | READ '(' ')' {$$ = createCall("read", NULL); }
     ;
 
 // took out declaration and declarations
@@ -145,9 +144,9 @@ declarations : declarations declaration {
                                         }
     | { $$ = new vector<astNode*> (); }
 
-declaration : INT ID ';' { $$ = createDecl($2); free(yylval.sName);}
+declaration : INT ID ';' { $$ = createDecl($2); free($2);}
     
-term : ID { $$ = createVar($1); }
+term : ID { $$ = createVar($1); free($1);}
     | NUM { $$ = createCnst($1); }
 
 %%

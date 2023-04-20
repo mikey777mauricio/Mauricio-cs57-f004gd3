@@ -5,6 +5,8 @@
 # test too many arguments
 make 
 
+echo "---------------------------"
+
 echo testing valid c programs 
 
 echo "---------------------------"
@@ -71,6 +73,10 @@ echo invalid p4
 ./miniC.out ./semantic_tests/p4.c
 echo return_code: $?
 
+echo "---------------------------"
+
+echo valgrind on sample_miniC
+make valgrind 
 echo "---------------------------"
 
 make clean
