@@ -9,4 +9,5 @@
 * lex file 
 * yacc file 
 * test files 
+* testing.sh -> to run test cases and valgrind
 
