@@ -35,14 +35,15 @@ using namespace std;
  * Caller provides: astNode* root, the root of the AST tree
  * 
  * We return:
- *   nothing
+ *   1: if syntax error
+ *   2: no syntax errors
  * We guarantee:
  *   if no errors, the helper functions will parse the entire 
  *   AST tree. 
  * Caller is responsible for:
  *   nothing
  */
-void analyze_node(astNode* root);
+int analyze_node(astNode* root);
 
 /**************** analyze_helper() ****************/
 /* index_new(): Asserts the input node is non-NULL. Then 

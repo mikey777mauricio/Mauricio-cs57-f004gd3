@@ -10,13 +10,14 @@
 #include "s_analyzer.h"
 
 /**************** global functions ****************/
-void analyze_node(astNode* root);
+int analyze_node(astNode* root);
 
 /**************** local functions ****************/
 void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_table);
 void analyze_stmt(astStmt* stmt, vector<vector<char*>*> *s, vector<char*> *s_table);
 
 /**************** functions ****************/
+int return_value = 0; 
 
 /**************** analyze_stmt() ****************/
 /* see s_analyzer.h for description */
@@ -153,7 +154,11 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
       }
       // analyze func body 
       analyze_helper(node->func.body, s, new_list);
+      // free new list 
       delete new_list; 
+      // free null pointer
+      *s->erase(s->begin() + s->size()-1);
+
       break;
 
     }
@@ -179,7 +184,7 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
       // if not in scope or not declared, print syntax error 
       if (!found){
         printf("syntax error, out of scope\n");
-        exit(1);
+        return_value = 1; 
       }
       break;
 
@@ -226,7 +231,7 @@ void analyze_helper(astNode* node, vector<vector<char*>*> *s, vector<char*> *s_t
 
 /**************** analyze_node() ****************/
 /* see s_analyzer.h for description */
-void analyze_node(astNode* root){
+int analyze_node(astNode* root){
   // initialize vector of vectors
   vector<vector<char*>*> *s;
   // set s to new empty vector
@@ -243,8 +248,11 @@ void analyze_node(astNode* root){
   delete slist;
   delete s; 
   // print statment 
-  printf("NO syntax errors :)\n");
-  //f ree root
+  if (return_value == 0) printf("NO syntax errors :)\n");
+  //free root
   freeNode(root);
+
+  // return 
+  return return_value;
 
 }

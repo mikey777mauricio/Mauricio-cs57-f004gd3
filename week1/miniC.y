@@ -13,8 +13,7 @@ extern int yylex_destroy();
 extern FILE *yyin;
 extern int yylineno;
 astNode* root; 
-extern void analyze_node(astNode*);
-extern void analyze_helper(astNode* node, stack<vector<char*>*> *s, vector<char*> *s_table);
+extern int analyze_node(astNode*);
 %}
 
 
@@ -59,7 +58,7 @@ extern void analyze_helper(astNode* node, stack<vector<char*>*> *s, vector<char*
 program : extern extern function_def { 
                                         $$ = createProg($1, $2, $3); 
                                         root = $$;
-                                        analyze_node($$);
+                                        
                                       
                                       }
         ;
@@ -153,15 +152,17 @@ term : ID { $$ = createVar($1); free($1);}
 
 int main(int argc, char** argv){
   // to read file name as argument
+  int error_bool = 0; 
 	if (argc == 2){
   	yyin = fopen(argv[1], "r"); 
 		yyparse();
+    error_bool = analyze_node(root);
   	fclose(yyin);
 	}
 
   // clean up leaks
 	yylex_destroy();
-	return 0;
+	return error_bool;
 }
 
 void yyerror(const char *s){
