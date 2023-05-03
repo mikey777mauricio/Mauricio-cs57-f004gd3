@@ -1,10 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <llvm-c/Core.h>
-#include <llvm-c/IRReader.h>
-#include <llvm-c/Types.h>
-#include "llvm_parser.c"
+/* 
+ * Mikey Mauricio     Optimizer Module    May 2nd, 2023
+ *
+ * optimizer.h - header file for 'optimizer' module 
+ * 
+ * the `optimizer` module implements common sub-expression elimination, 
+ *    dead code elimination, and constant folding. It returns and 
+ *    optimized LLVM module 
+ *
+ */
+
+/**************** Link Section ****************/
+#include "optimizer.h"
 
 
 // LLVMOpcode LLVMGetInstructionOpcode(LLVMValueRef Inst)
@@ -15,23 +21,23 @@
 bool common_sub_expr(LLVMBasicBlockRef bb){
   bool change = false; 
   // for loop to iterate through instructions 
-  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction;
+  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction != NULL;
   				instruction = LLVMGetNextInstruction(instruction)) {
     // get Opcode	
 		LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
     // get operands
     LLVMValueRef op1 = LLVMGetOperand(instruction, 0);
     LLVMValueRef op2 = LLVMGetOperand(instruction, 1);
+    LLVMValueRef next = LLVMGetNextInstruction(instruction);
     // loop through next instructions 
-    for (LLVMValueRef next = LLVMGetNextInstruction(instruction); next;
-  		      next = LLVMGetNextInstruction(next)) {
+    while (next != NULL) {
       // get Opcode
-      LLVMOpcode next_op = LLVMGetInstructionOpcode(instruction);
+      LLVMOpcode next_op = LLVMGetInstructionOpcode(next);
       // get operands
-      LLVMValueRef next_op1 = LLVMGetOperand(instruction, 0);
-      LLVMValueRef next_op2 = LLVMGetOperand(instruction, 1);
+      LLVMValueRef next_op1 = LLVMGetOperand(next, 0);
+      LLVMValueRef next_op2 = LLVMGetOperand(next, 1);
       // saftey check 
-      if (op == LLVMLoad && op1 == next_op1 && op2 == next_op2 && next_op == LLVMStore){
+      if (LLVMIsALoadInst(instruction) && op1 == next_op1 && op2 == next_op2 && LLVMIsAStoreInst(next)){
         // break 
         break; 
 
@@ -40,11 +46,13 @@ bool common_sub_expr(LLVMBasicBlockRef bb){
       if (LLVMGetInstructionOpcode(next) == op && LLVMGetOperand(next, 0) == op1 
               && LLVMGetOperand(next, 1) == op2){
         // replace all uses with instruction 
+        printf("Replacing\n");
         LLVMReplaceAllUsesWith(next, instruction);
         // change flag to true
         change = true; 
         
       }
+      next = LLVMGetNextInstruction(next);
     }
   }
   // return flag
@@ -62,19 +70,20 @@ bool dead_code_elimination(LLVMValueRef function){
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
             instruction = LLVMGetNextInstruction(instruction)){
       // get first instruction 
+     
       if (LLVMGetFirstUse(instruction) == NULL) {
         // get Opcode
         LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
         // check if store or call 
-        if (op == LLVMStore || op == LLVMCall){
-          // continue
-          continue;
+        if (!LLVMIsAStoreInst(instruction) && !LLVMIsACallInst(instruction) && !LLVMIsABranchInst(instruction) && !LLVMIsAAllocaInst(instruction) && !LLVMIsAReturnInst(instruction)){
+          // erase instruction if passes check 
+          printf("deleting\n");
+          LLVMInstructionEraseFromParent(instruction);
+          // set change to true
+          change = true; 
 
         }
-        // erase instruction if passes check 
-        LLVMInstructionEraseFromParent(instruction);
-        // set change to true
-        change = true; 
+       
       }
 
     }
@@ -160,22 +169,24 @@ bool const_folding(LLVMValueRef function){
 }
 
 
-LLVMModuleRef optimize(LLVMModuleRef m){
+LLVMModuleRef optimize_mod(LLVMModuleRef m){
   /* common sub-expression elimination */
   // loop through functions
-  for (LLVMValueRef function =  LLVMGetFirstFunction(m); function; 
+    printf("common sub\n");
+  int changed = 0; 
+  while (changed == 0) {
+  for (LLVMValueRef function =  LLVMGetFirstFunction(m); function != NULL; 
         function = LLVMGetNextFunction(function)) {
       // loop through basic blocks
-      for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function); basicBlock;
+      for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function); basicBlock != NULL;
             basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
           // set changed 
-          bool changed = common_sub_expr(basicBlock);
-            // check if change is true
-            while (changed) {
-              // call function until change is false
-              changed = common_sub_expr(basicBlock);
-
-            }
+          
+          if (!common_sub_expr(basicBlock)) {
+            changed = 1; 
+          } else {
+            changed = 0; 
+          }
       }
   }
   /* dead code elimination */
@@ -183,29 +194,37 @@ LLVMModuleRef optimize(LLVMModuleRef m){
   for (LLVMValueRef function =  LLVMGetFirstFunction(m); function; 
           function = LLVMGetNextFunction(function)) {
     // set changed
-    bool changed = dead_code_elimination(function);
+    
     // check if change is true
-    while (changed) {
+   
       // call function until change is false
-      changed = dead_code_elimination(function);
-
+    if (!dead_code_elimination(function) && changed == 1){
+      changed = 1; 
+   
+    } else {
+      changed = 0; 
     }
+
+    
   }
   /* constant folding */
   // loop through functions
   for (LLVMValueRef function =  LLVMGetFirstFunction(m); function; 
           function = LLVMGetNextFunction(function)) {
     // set changed          
-    bool changed = const_folding(function);
+   
     // check if change is true
-    while (changed) {
+    
       // call function until change is false
-      changed = const_folding(function);
+     if (!const_folding(function) && changed == 1){
+       changed = 1;
+     } else {
+       changed = 0; 
+     }
 
-    }
+    
   }
-  // walk functions 
-  walkFunctions(m);
+  }
   // return module
   return m; 
 
