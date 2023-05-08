@@ -47,6 +47,7 @@ bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
       // continue
       continue; 
     }
+    if (LLVMIsAAllocaInst(instrA)) continue;
     // Compare instrA with instructions that follow it in the basic block
     for (LLVMValueRef instrB = LLVMGetNextInstruction(instrA); instrB; instrB = LLVMGetNextInstruction(instrB)){
       // Check if instrA and instrB have the same opcode and operands
@@ -64,9 +65,22 @@ bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
 
           }
         } 
+        if (!LLVMIsALoadInst(instrA)){
+          // print
+          printf("replacing\n");
+          // replace
+          LLVMReplaceAllUsesWith(instrB, instrA);
+          // add to vector 
+          slist->push_back(LLVMPrintValueToString(instrA));
+          // set change to true
+          change = true; 
+          continue; 
+
+        }
         if (!isCandidate) continue; 
+        bool loadBetween = false; 
         // Check if instrA and instrB are load instructions
-        if (isCandidate && LLVMIsALoadInst(instrA) && LLVMIsALoadInst(instrB)){
+        if (LLVMIsALoadInst(instrA) && LLVMIsALoadInst(instrB)){
           // get operands 
           LLVMValueRef op1 = LLVMGetOperand(instrA, 0);
           LLVMValueRef op2 = LLVMGetOperand(instrA, 1);
@@ -75,18 +89,18 @@ bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
             // if store and same operands
             if (LLVMIsAStoreInst(currInstr) && (LLVMGetOperand(currInstr, 0) == op1 && LLVMGetOperand(currInstr, 1) == op2)){
               // cannot be a candidate 
-              isCandidate = false;
+              loadBetween = true;
               break;
 
             }
-          }
-          // if not candidate
-          if (!isCandidate){
-            // break 
-            break;
-
-          }        
+          }      
         }
+        // if not candidate
+        if (loadBetween){
+          // break 
+          break;
+
+        }  
         // If instrA and instrB are candidates for elimination, replace instrB with instrA
         if (isCandidate){
           // print
@@ -107,6 +121,8 @@ bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
 
 }
 
+
+
 /**************** dead_code_elimination() ****************/
 /* see optimizer.h for description */
 bool dead_code_elimination(LLVMValueRef fn) {
@@ -124,36 +140,47 @@ bool dead_code_elimination(LLVMValueRef fn) {
       if (LLVMGetFirstUse(instruction) == NULL){
         printf("deleting\n");
         // erase from parent
+       
         LLVMInstructionEraseFromParent(instruction);
+      
         // set change to true
         change = true; 
         // continue 
         continue;
 
       }
-      // bool indirectUses = false; 
-      // for (LLVMUseRef use = LLVMGetFirstUse(instruction); use; use = LLVMGetNextUse(use)){
-      //   printf("test\n");
-      //   if (LLVMGetUser(use) == instruction) {
-      //     indirectUses = true; 
-      //     break; 
-      //   }
-      // }
-      // if (!indirectUses){
-      //   printf("USE: deleting\n");
-      //   // erase from parent
-      //   LLVMInstructionEraseFromParent(instruction);
-      //   printf("test\n");
-      //   // set change to true
-      //   change = true; 
+      
+    bool used = false; 
+    for (LLVMValueRef instrB = LLVMGetNextInstruction(instruction); instrB; instrB = LLVMGetNextInstruction(instrB)){
+      int num = LLVMGetNumOperands(instrB);
+      for (int i = 0; i < num; i++){
+        if (LLVMGetOperand(instrB, i) == instruction){
+          used = true; 
+          break; 
+        }
+      }
+    
+    }
+    if (!used){
+             printf("deleting\n");
+        // erase from parent
+       
+        LLVMInstructionEraseFromParent(instruction);
+      
+        // set change to true
+        change = true; 
+        // continue 
+        continue;
 
-      // }
+
+    }
+      
+      
     }
   }
-  // return change
-  return change; 
-  
+  return change;
 }
+ 
 
 /**************** const_folding() ****************/
 /* see optimizer.h for description */
@@ -240,8 +267,17 @@ LLVMModuleRef optimize_mod(LLVMModuleRef m){
         const_changed = const_folding(function);
 
       } 
-    }  
-  }       
+
+      dead_changed = true; 
+      const_changed = true;  
+      while(dead_changed || const_changed){
+        dead_changed = dead_code_elimination(function);
+        const_changed = const_folding(function);
+      }
+    } 
+  } 
+     
+
   // return module
   return m; 
 
