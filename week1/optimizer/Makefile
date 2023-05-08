@@ -1,18 +1,18 @@
 LLVMCODE = llvm_parser
 TEST = test
 
-CFLAGS = clang -g `llvm-config-15 --cflags` -I /usr/include/llvm-c-15/
+CFLAGS = g++ -Wall -Wextra  -g  `llvm-config-15 --cflags` -I /usr/include/llvm-c-15/
 
 all: $(LLVMCODE) optimizer.o llvm_file
 
 $(LLVMCODE): $(LLVMCODE).c optimizer.o
-	clang -g `llvm-config-15 --cflags` -I /usr/include/llvm-c-15/ -c $(LLVMCODE).c -o $(LLVMCODE).o
-	clang++ `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ $(LLVMCODE).o optimizer.o -o $@
+	clang++ -g `llvm-config-15 --cflags` -I /usr/include/llvm-c-15/ -c optimizer.o $(LLVMCODE).c -o $(LLVMCODE).o
+	clang++ `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/  llvm_parser.o  optimizer.o -o llvm_parser
 
 
 
 optimizer.o: optimizer.c optimizer.h
-	$(CFLAGS) -c optimizer.c -o optimizer.o
+	$(CFLAGS) -c optimizer.c 
 
 
 llvm_file: $(TEST).c

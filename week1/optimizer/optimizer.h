@@ -12,12 +12,19 @@
 /**************** Link Section ****************/
 #ifndef OPTIMIZATION_H
 #define OPTIMIZATION_H
+#include <cstddef>
+#include<vector>
+using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
+
+
+
 
 /**************** functions ****************/
 
@@ -57,7 +64,7 @@ bool common_sub_expr(LLVMBasicBlockRef bb);
  * Caller is responsible for:
  *   nothing
  */
-bool dead_code_elimination(LLVMValueRef function);
+bool dead_code_elimination(LLVMValueRef fn);
 
 /**************** const_folding() ****************/
 /* const_folding(): Goes over all instructions in 
@@ -76,7 +83,7 @@ bool dead_code_elimination(LLVMValueRef function);
  * Caller is responsible for:
  *   nothing
  */
-bool const_folding(LLVMValueRef function);
+bool const_folding(LLVMValueRef fn);
 
 /**************** optimize() ****************/
 /* optimize(): Optimizes the given LLVMModuleRef by calling 

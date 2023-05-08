@@ -12,153 +12,196 @@
 /**************** Link Section ****************/
 #include "optimizer.h"
 
+/**************** functions ****************/
 
-// LLVMOpcode LLVMGetInstructionOpcode(LLVMValueRef Inst)
-// common sub-expression elimination function 
-// LLVMReplaceAllUsesWith 
-// LLVMValueRef LLVMGetOperand(LLVMValueRef Val, unsigned Index)
-// saftey check only required when A and B are load instructions 
-bool common_sub_expr(LLVMBasicBlockRef bb){
-  bool change = false; 
-  // for loop to iterate through instructions 
-  for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction != NULL;
-  				instruction = LLVMGetNextInstruction(instruction)) {
-    // get Opcode	
-		LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
-    // get operands
-    LLVMValueRef op1 = LLVMGetOperand(instruction, 0);
-    LLVMValueRef op2 = LLVMGetOperand(instruction, 1);
-    LLVMValueRef next = LLVMGetNextInstruction(instruction);
-    // loop through next instructions 
-    while (next != NULL) {
-      // get Opcode
-      LLVMOpcode next_op = LLVMGetInstructionOpcode(next);
-      // get operands
-      LLVMValueRef next_op1 = LLVMGetOperand(next, 0);
-      LLVMValueRef next_op2 = LLVMGetOperand(next, 1);
-      // saftey check 
-      if (LLVMIsALoadInst(instruction) && op1 == next_op1 && op2 == next_op2 && LLVMIsAStoreInst(next)){
+/**************** common_sub_expr() ****************/
+/* see optimizer.h for description */ 
+bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
+  // change bool 
+  bool change = false;
+  // iterate through instructions
+  for (LLVMValueRef instrA = LLVMGetFirstInstruction(bb); instrA; instrA = LLVMGetNextInstruction(instrA)){
+    // bool to check if seen 
+    bool seen = false; 
+    // iterate through vector 
+    for (unsigned int i = 0; i < (*slist).size(); i++){
+      // set currInst char*
+      char* currInst = (*slist)[i];
+      // compare with instrA
+      if (strcmp(currInst, LLVMPrintValueToString(instrA)) == 0){
+        // set seen to true
+        seen = true;
+        // print seen 
+        printf("SEEN\n");
+
+      }
+      // if seen 
+      if (seen){
         // break 
         break; 
 
       }
-      // check if same instruction 
-      if (LLVMGetInstructionOpcode(next) == op && LLVMGetOperand(next, 0) == op1 
-              && LLVMGetOperand(next, 1) == op2){
-        // replace all uses with instruction 
-        printf("Replacing\n");
-        LLVMReplaceAllUsesWith(next, instruction);
-        // change flag to true
-        change = true; 
-        
-      }
-      next = LLVMGetNextInstruction(next);
     }
-  }
-  // return flag
-  return change; 
+    // if seen 
+    if (seen){
+      // continue
+      continue; 
+    }
+    // Compare instrA with instructions that follow it in the basic block
+    for (LLVMValueRef instrB = LLVMGetNextInstruction(instrA); instrB; instrB = LLVMGetNextInstruction(instrB)){
+      // Check if instrA and instrB have the same opcode and operands
+      if (LLVMGetInstructionOpcode(instrA) == LLVMGetInstructionOpcode(instrB) &&
+        LLVMGetNumOperands(instrA) == LLVMGetNumOperands(instrB)) {
+        // set candidate to true 
+        bool isCandidate = true;
+        // check operands
+        for (int i = 0; i < LLVMGetNumOperands(instrA); i++){
+          if (LLVMGetOperand(instrA, i) != LLVMGetOperand(instrB,i)){
+            // set candidate to false
+            isCandidate = false; 
+            // break 
+            break;
 
-}
+          }
+        } 
+        if (!isCandidate) continue; 
+        // Check if instrA and instrB are load instructions
+        if (isCandidate && LLVMIsALoadInst(instrA) && LLVMIsALoadInst(instrB)){
+          // get operands 
+          LLVMValueRef op1 = LLVMGetOperand(instrA, 0);
+          LLVMValueRef op2 = LLVMGetOperand(instrA, 1);
+          // iterate through instructions inbetween 
+          for (LLVMValueRef currInstr = LLVMGetNextInstruction(instrA); currInstr != instrB; currInstr = LLVMGetNextInstruction(currInstr)){
+            // if store and same operands
+            if (LLVMIsAStoreInst(currInstr) && (LLVMGetOperand(currInstr, 0) == op1 && LLVMGetOperand(currInstr, 1) == op2)){
+              // cannot be a candidate 
+              isCandidate = false;
+              break;
 
-bool dead_code_elimination(LLVMValueRef function){
-  // flag 
-  bool change = false; 
-  // iloop through basic blocks
-  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(function); block != NULL; 
-          block = LLVMGetNextBasicBlock(block)){
-    // loop thropugh instructions
-    for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
-            instruction = LLVMGetNextInstruction(instruction)){
-      // get first instruction 
-     
-      if (LLVMGetFirstUse(instruction) == NULL) {
-        // get Opcode
-        LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
-        // check if store or call 
-        if (!LLVMIsAStoreInst(instruction) && !LLVMIsACallInst(instruction) && !LLVMIsABranchInst(instruction) && !LLVMIsAAllocaInst(instruction) && !LLVMIsAReturnInst(instruction)){
-          // erase instruction if passes check 
-          printf("deleting\n");
-          LLVMInstructionEraseFromParent(instruction);
+            }
+          }
+          // if not candidate
+          if (!isCandidate){
+            // break 
+            break;
+
+          }        
+        }
+        // If instrA and instrB are candidates for elimination, replace instrB with instrA
+        if (isCandidate){
+          // print
+          printf("replacing\n");
+          // replace
+          LLVMReplaceAllUsesWith(instrB, instrA);
+          // add to vector 
+          slist->push_back(LLVMPrintValueToString(instrA));
           // set change to true
           change = true; 
 
         }
-       
-      }
-
+      } 
     }
   }
-
-  return change; 
+  // return change
+  return change;
 
 }
-//   LLVMAdd            = 8,
-  // LLVMFAdd           = 9,
-  // LLVMSub            = 10,
-  // LLVMFSub           = 11,
-  // LLVMMul            = 12,
-  // LLVMFMul           = 13,
-  // LLVMUDiv           = 14,
-  // LLVMSDiv           = 15,
-  // LLVMFDiv           = 16,
-  // LLVMURem           = 17,
-  // LLVMSRem           = 18,
-  // LLVMFRem           = 19,
-  // LLVMConstantIntValueKind, LLVMValueKind
-bool const_folding(LLVMValueRef function){
+
+/**************** dead_code_elimination() ****************/
+/* see optimizer.h for description */
+bool dead_code_elimination(LLVMValueRef fn) {
+  // set change to false 
+  bool change = false; 
+  // iterate through instructions 
+  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(fn); block != NULL; 
+          block = LLVMGetNextBasicBlock(block)){
+    for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
+            instruction = LLVMGetNextInstruction(instruction)){
+      // check if instruction has side effects
+      if (LLVMIsATerminatorInst(instruction) || LLVMIsAStoreInst(instruction) || LLVMIsAAllocaInst(instruction)) continue; 
+      // bool for indirect uses
+      bool isUsed = false; 
+      if (LLVMGetFirstUse(instruction) == NULL){
+        printf("deleting\n");
+        // erase from parent
+        LLVMInstructionEraseFromParent(instruction);
+        // set change to true
+        change = true; 
+        // continue 
+        continue;
+
+      }
+      // bool indirectUses = false; 
+      // for (LLVMUseRef use = LLVMGetFirstUse(instruction); use; use = LLVMGetNextUse(use)){
+      //   printf("test\n");
+      //   if (LLVMGetUser(use) == instruction) {
+      //     indirectUses = true; 
+      //     break; 
+      //   }
+      // }
+      // if (!indirectUses){
+      //   printf("USE: deleting\n");
+      //   // erase from parent
+      //   LLVMInstructionEraseFromParent(instruction);
+      //   printf("test\n");
+      //   // set change to true
+      //   change = true; 
+
+      // }
+    }
+  }
+  // return change
+  return change; 
+  
+}
+
+/**************** const_folding() ****************/
+/* see optimizer.h for description */
+bool const_folding(LLVMValueRef fn){
   // flag
   bool change = false;
   // loop through basic blocks
-  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(function); block != NULL; 
-          block = LLVMGetNextBasicBlock(block)){
+  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(fn); block != NULL; 
+            block = LLVMGetNextBasicBlock(block)){
+  
     // loop through functions
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
             instruction = LLVMGetNextInstruction(instruction)){
       // get op
       LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
       // check if add, sub, or mul Opcode 
-      if (op == LLVMAdd || op == LLVMSub || op == LLVMMul){
+      if (op == LLVMAdd || op == LLVMFAdd || op == LLVMSub || op == LLVMFSub|| op == LLVMMul || op == LLVMFMul){
+        printf("Arithmetic\n");
         // get operands
         LLVMValueRef op1 = LLVMGetOperand(instruction, 0);
         LLVMValueRef op2 = LLVMGetOperand(instruction, 1);
         // if both operands are constant
-        if (LLVMIsConstant(op1) && LLVMIsConstant(op2)){
+        if (LLVMIsAConstant(op1) && LLVMIsAConstant(op2)){
           // set const_res to NULL
-          LLVMValueRef const_res = NULL; 
+          printf("constants\n");
+
           // switch statement 
-          switch (op) {
-            // add case
-            case LLVMAdd: {
-              const_res = LLVMConstAdd(op1, op2);
-              break;
+          if (op == LLVMAdd || op == LLVMFAdd){
+            printf("op1 %s, op2 %s\n", LLVMPrintValueToString(op1), LLVMPrintValueToString(op2));
 
-            }
-            // sub case
-            case LLVMSub: {
-              const_res = LLVMConstSub(op1, op2);
-              break;
-
-            }
-            // mult case 
-            case LLVMMul: {
-              const_res = LLVMConstMul(op1, op2);
-              break;
-
-            }
-            // default
-            default:
-              break; 
-          }
-          // check const res
-          if (const_res != NULL) {
-            // replace all uses with const
-            LLVMReplaceAllUsesWith(instruction, const_res);
-            // erase instruction 
-            //LLVMInstructionEraseFromParent(instruction);
-            // set change to true
-            change = true; 
+            LLVMValueRef res = LLVMConstAdd(op1, op2);
+            LLVMReplaceAllUsesWith(instruction, res);
 
           }
+          else if (op == LLVMSub || op == LLVMSub){
+            LLVMValueRef res = LLVMConstSub(op1, op2);
+            LLVMReplaceAllUsesWith(instruction, res);
+    
+         
+          }
+          else if (op == LLVMMul || op == LLVMMul){
+            LLVMValueRef res = LLVMConstMul(op1, op2);
+            LLVMReplaceAllUsesWith(instruction, res);
+                       
+        
+          }     
+          change = true; 
+        
         }
       }
     }
@@ -168,63 +211,37 @@ bool const_folding(LLVMValueRef function){
 
 }
 
-
+/**************** optimize_mod() ****************/
+/* see optimizer.h for description */
 LLVMModuleRef optimize_mod(LLVMModuleRef m){
-  /* common sub-expression elimination */
-  // loop through functions
-    printf("common sub\n");
-  int changed = 0; 
-  while (changed == 0) {
+  /* function checks */
+  bool sub_changed = true; 
+  bool dead_changed = true; 
+  bool const_changed = true;   
+  // loop through functions 
   for (LLVMValueRef function =  LLVMGetFirstFunction(m); function != NULL; 
-        function = LLVMGetNextFunction(function)) {
-      // loop through basic blocks
-      for (LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function); basicBlock != NULL;
-            basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
-          // set changed 
-          
-          if (!common_sub_expr(basicBlock)) {
-            changed = 1; 
-          } else {
-            changed = 0; 
-          }
-      }
-  }
-  /* dead code elimination */
-  // loop through functions
-  for (LLVMValueRef function =  LLVMGetFirstFunction(m); function; 
-          function = LLVMGetNextFunction(function)) {
-    // set changed
-    
-    // check if change is true
-   
-      // call function until change is false
-    if (!dead_code_elimination(function) && changed == 1){
-      changed = 1; 
-   
-    } else {
-      changed = 0; 
-    }
+          function = LLVMGetNextFunction(function)) {     
+    // loop through basic blocks 
+    // reset bools 
+    vector<char*> *slist;
+	  slist = new vector<char*> ();
+    for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(function); block != NULL; 
+            block = LLVMGetNextBasicBlock(block)){
+      // vector to check seen instructions 
+      
+      // while either return true 
+      sub_changed = true; 
+      dead_changed = true; 
+      const_changed = true;  
+      while(sub_changed || dead_changed || const_changed) {
+        // call each function 
+        sub_changed = common_sub_expr(block, slist);
+        dead_changed = dead_code_elimination(function);
+        const_changed = const_folding(function);
 
-    
-  }
-  /* constant folding */
-  // loop through functions
-  for (LLVMValueRef function =  LLVMGetFirstFunction(m); function; 
-          function = LLVMGetNextFunction(function)) {
-    // set changed          
-   
-    // check if change is true
-    
-      // call function until change is false
-     if (!const_folding(function) && changed == 1){
-       changed = 1;
-     } else {
-       changed = 0; 
-     }
-
-    
-  }
-  }
+      } 
+    }  
+  }       
   // return module
   return m; 
 
