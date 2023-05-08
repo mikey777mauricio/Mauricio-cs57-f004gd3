@@ -64,7 +64,7 @@ bool common_sub_expr(LLVMBasicBlockRef bb);
  * Caller is responsible for:
  *   nothing
  */
-bool dead_code_elimination(LLVMValueRef fn);
+bool dead_code_elimination(LLVMBasicBlockRef block);
 
 /**************** const_folding() ****************/
 /* const_folding(): Goes over all instructions in 
@@ -83,7 +83,7 @@ bool dead_code_elimination(LLVMValueRef fn);
  * Caller is responsible for:
  *   nothing
  */
-bool const_folding(LLVMValueRef fn);
+bool const_folding(LLVMBasicBlockRef block);
 
 /**************** optimize() ****************/
 /* optimize(): Optimizes the given LLVMModuleRef by calling 

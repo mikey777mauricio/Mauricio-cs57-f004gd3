@@ -125,12 +125,11 @@ bool common_sub_expr(LLVMBasicBlockRef bb, vector<char*> *slist){
 
 /**************** dead_code_elimination() ****************/
 /* see optimizer.h for description */
-bool dead_code_elimination(LLVMValueRef fn) {
+bool dead_code_elimination(LLVMBasicBlockRef block) {
   // set change to false 
   bool change = false; 
   // iterate through instructions 
-  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(fn); block != NULL; 
-          block = LLVMGetNextBasicBlock(block)){
+  
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
             instruction = LLVMGetNextInstruction(instruction)){
       // check if instruction has side effects
@@ -177,19 +176,18 @@ bool dead_code_elimination(LLVMValueRef fn) {
       
       
     }
-  }
+  
   return change;
 }
  
 
 /**************** const_folding() ****************/
 /* see optimizer.h for description */
-bool const_folding(LLVMValueRef fn){
+bool const_folding(LLVMBasicBlockRef block){
   // flag
   bool change = false;
   // loop through basic blocks
-  for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(fn); block != NULL; 
-            block = LLVMGetNextBasicBlock(block)){
+ 
   
     // loop through functions
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
@@ -197,42 +195,60 @@ bool const_folding(LLVMValueRef fn){
       // get op
       LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
       // check if add, sub, or mul Opcode 
-      if (op == LLVMAdd || op == LLVMFAdd || op == LLVMSub || op == LLVMFSub|| op == LLVMMul || op == LLVMFMul){
+      if (op == LLVMAdd || op == LLVMSub || op == LLVMMul){
         printf("Arithmetic\n");
         // get operands
         LLVMValueRef op1 = LLVMGetOperand(instruction, 0);
         LLVMValueRef op2 = LLVMGetOperand(instruction, 1);
+        // print values 
+        LLVMDumpValue(op1);
+        printf("\n");
+        LLVMDumpValue(op2);
+        printf("\n");
         // if both operands are constant
         if (LLVMIsAConstant(op1) && LLVMIsAConstant(op2)){
           // set const_res to NULL
           printf("constants\n");
+          // constant res 
+          LLVMValueRef res; 
+          // switch statements
+          switch (op){
+            // add
+            case LLVMAdd: {
+              // call const add
+              res = LLVMConstAdd(op1, op2);
+              break; 
 
-          // switch statement 
-          if (op == LLVMAdd || op == LLVMFAdd){
-            printf("op1 %s, op2 %s\n", LLVMPrintValueToString(op1), LLVMPrintValueToString(op2));
-
-            LLVMValueRef res = LLVMConstAdd(op1, op2);
-            LLVMReplaceAllUsesWith(instruction, res);
+            }
+            // sub 
+            case LLVMSub: {
+              // call const sub 
+              res = LLVMConstSub(op1, op2);
+              break; 
+              
+            }
+            // mul
+            case LLVMMul: {
+              // call const mul 
+              res = LLVMConstMul(op1, op2);
+              break; 
+              
+            }
+            // default 
+            default: 
+              // break 
+              break; 
 
           }
-          else if (op == LLVMSub || op == LLVMSub){
-            LLVMValueRef res = LLVMConstSub(op1, op2);
-            LLVMReplaceAllUsesWith(instruction, res);
-    
-         
-          }
-          else if (op == LLVMMul || op == LLVMMul){
-            LLVMValueRef res = LLVMConstMul(op1, op2);
-            LLVMReplaceAllUsesWith(instruction, res);
-                       
-        
-          }     
+          // replace all uses
+          LLVMReplaceAllUsesWith(instruction, res);
+          // set change to true
           change = true; 
         
         }
       }
     }
-  }
+  
   // return flag
   return change;
 
@@ -263,23 +279,12 @@ LLVMModuleRef optimize_mod(LLVMModuleRef m){
       while(sub_changed || dead_changed || const_changed) {
         // call each function 
         sub_changed = common_sub_expr(block, slist);
-        dead_changed = dead_code_elimination(function);
-        const_changed = const_folding(function);
+        dead_changed = dead_code_elimination(block);
+        const_changed = const_folding(block);
 
       } 
-
-      dead_changed = true; 
-      const_changed = true;  
-      while(dead_changed || const_changed){
-        dead_changed = dead_code_elimination(function);
-        const_changed = const_folding(function);
-      }
-    } 
+    }
   } 
-     
-
   // return module
   return m; 
-
 }
-
