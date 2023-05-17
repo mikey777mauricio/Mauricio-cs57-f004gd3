@@ -13,8 +13,14 @@
 #ifndef OPTIMIZATION_H
 #define OPTIMIZATION_H
 #include <cstddef>
+#include <bits/stdc++.h>
+
 #include<vector>
+#include<unordered_set> 
 using namespace std;
+#include <iostream>
+
+#include <unordered_map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -22,6 +28,7 @@ using namespace std;
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
+
 
 
 
@@ -85,6 +92,14 @@ bool dead_code_elimination(LLVMBasicBlockRef block);
  */
 bool const_folding(LLVMBasicBlockRef block);
 
+std::unordered_set<LLVMValueRef> compute_gen(LLVMBasicBlockRef block);
+std::unordered_set<LLVMValueRef> compute_set_s(LLVMValueRef fn);
+std::unordered_set<LLVMValueRef> compute_kill(LLVMBasicBlockRef block, unordered_set<LLVMValueRef> s);
+std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_in_out(LLVMValueRef fn);
+unordered_set<LLVMValueRef> find_loads(LLVMValueRef instruction, unordered_set<LLVMValueRef> r);
+
+bool constant_prop(LLVMValueRef fn, unordered_set<LLVMValueRef> s);
+bool check_loadInstructions(LLVMValueRef fn, unordered_map<LLVMBasicBlockRef, unordered_set<LLVMValueRef>> in);
 /**************** optimize() ****************/
 /* optimize(): Optimizes the given LLVMModuleRef by calling 
  *   each optimization function within separate loops.  
