@@ -252,43 +252,53 @@ bool const_folding(LLVMBasicBlockRef block){
   return change;
 
 }
-
+/**************** compute_gen() ****************/
+/* see optimizer.h for description */
 std::unordered_set<LLVMValueRef> compute_gen(LLVMBasicBlockRef block){
- unordered_map<LLVMValueRef, LLVMValueRef> gen; 
- for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction; instruction = LLVMGetNextInstruction(instruction)){
-   if (LLVMIsAStoreInst(instruction)){
+  // initialize gen map  
+  unordered_map<LLVMValueRef, LLVMValueRef> gen; 
+  // iterate through each instruction 
+  for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction; 
+          instruction = LLVMGetNextInstruction(instruction)){
+    // if store instruction 
+    if (LLVMIsAStoreInst(instruction)){
+    // get address of store 
      LLVMValueRef address = LLVMGetOperand(instruction, 1);
+     // add to gen map 
      gen[address] = instruction; 
 
-   }
- }
- unordered_set<LLVMValueRef> gen_set; 
- for (auto it = gen.begin(); it != gen.end(); it++){
+    }
+  }
+  // initialize gen set 
+  unordered_set<LLVMValueRef> gen_set; 
+  // iterate through each instruction in gen map 
+  for (auto it = gen.begin(); it != gen.end(); it++){
+   // if instruction != NULL
    if (it->second != NULL){
-     gen_set.insert(it->second);
+    // add to gen set
+    gen_set.insert(it->second);
 
    }
- }
- return gen_set; 
+  }
+  // return gen set
+  return gen_set; 
 
 }
 
-// Computing the set KILL[B] of a basic block B
-// Compute the set "S" of all store instructions in the
-// given function before computing KILL for all basic blocks.
-// Initialize KILL[B] = empty set
-// for each instruction I in basic block B do the following:
-// If I is a store instruction add all the instructions in S 
-// that get killed by I to KILL[B] [Note: A instruction cannot kill itself]
-
+/**************** compute_set_s() ****************/
+/* see optimizer.h for description */
 std::unordered_set<LLVMValueRef> compute_set_s(LLVMValueRef fn){
-  // comput set s of all store instructions in given function 
+  // initialize store set 
   std::unordered_set<LLVMValueRef> s_set;
-  for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)){
-    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction != NULL; 
+  // iterate through each basic block of function 
+  for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
+          bb = LLVMGetNextBasicBlock(bb)){
+    // iterate through each instruction 
+    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction; 
             instruction = LLVMGetNextInstruction(instruction)){
       // add store instruction to set 
       if (LLVMIsAStoreInst(instruction)){
+        // insert into store set 
         s_set.insert(instruction);
 
       }  
@@ -299,43 +309,56 @@ std::unordered_set<LLVMValueRef> compute_set_s(LLVMValueRef fn){
 
 }
 
+/**************** const_kill() ****************/
+/* see optimizer.h for description */
 std::unordered_set<LLVMValueRef> compute_kill(LLVMBasicBlockRef block, std::unordered_set<LLVMValueRef> s_set){
+  // initialize kill set
   std::unordered_set<LLVMValueRef> kill_set;
-  
+  // iterate through each instruction 
   for (LLVMValueRef instruction = LLVMGetFirstInstruction(block); instruction != NULL; 
             instruction = LLVMGetNextInstruction(instruction)){
+    // if store instruction 
     if (LLVMIsAStoreInst(instruction)){
+      // get address 
       LLVMValueRef address = LLVMGetOperand(instruction, 1);
+      // for instruction in store set 
       for (LLVMValueRef instructionB : s_set){
+        // if same instruction continue 
         if (instruction == instructionB) continue; 
+        // get address of instructionB 
         LLVMValueRef addressB = LLVMGetOperand(instructionB, 1);
+        // if killed by instruction
         if (address == addressB) {
+          // insert instruction B
           kill_set.insert(instructionB);
 
         }
       }
     }
-
-    
   }
-
+  // return kill set 
   return kill_set; 
 
 }
 
-
+/**************** const_compute_in_out() ****************/
+/* see optimizer.h for description */
 std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_in_out(LLVMValueRef fn, unordered_set<LLVMValueRef> s){
   // map of in sets
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> in; 
   // map of out sets
   std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> out; 
-  // set in of each bb to empty
-  for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)){
+  // iterate through each basic block 
+  for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
+          bb = LLVMGetNextBasicBlock(bb)){
+    // initialize each IN[B] to empty set 
     in[bb] = unordered_set<LLVMValueRef> ();
 
   }
-  // set out of each bb to gen 
-  for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)){
+  // iterate through each basic black 
+  for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
+          bb = LLVMGetNextBasicBlock(bb)){
+    // set each OUT[B] to gen
     out[bb] = compute_gen(bb);
 
   }
@@ -345,7 +368,7 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
   for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)) {
     // get terminator 
     LLVMValueRef terminator = LLVMGetBasicBlockTerminator(bb);
-    // get number of successors 
+    // iteratoe through each successor 
     for (unsigned int i = 0; i < LLVMGetNumSuccessors(terminator); i++) {
       // add successor to pred map 
       LLVMBasicBlockRef successor = LLVMGetSuccessor(terminator, i);
@@ -360,18 +383,19 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
     // set change to false 
     change = false; 
     // iterate through each bb
-    for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)){
-      // in set 
+    for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
+            bb = LLVMGetNextBasicBlock(bb)){
+      // initialize in set 
       unordered_set<LLVMValueRef> in_bb; 
       // for each bb in predecessors
       for (LLVMBasicBlockRef p : predecessors[bb]){
-        // get insert union of all predecessors 
+        // insert all the OUT[p]
         in_bb.insert(out[p].begin(), out[p].end());
 
       }
       // set in to in 
       in[bb] = in_bb; 
-      // old out = out[bb]
+      // old out = out[bb] 
       unordered_set<LLVMValueRef> old = out[bb];
       // get in of bb to cmpute in - kill 
       unordered_set<LLVMValueRef> sub = in[bb];
@@ -396,7 +420,8 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
   return in; 
 
 }
-
+/**************** find_loads() ****************/
+/* see optimizer.h for description */
 unordered_set<LLVMValueRef> find_loads(LLVMValueRef instruction, unordered_set<LLVMValueRef> r){
   // set of stores that write to address
   unordered_set<LLVMValueRef> loads; 
@@ -434,53 +459,89 @@ unordered_set<LLVMValueRef> find_loads(LLVMValueRef instruction, unordered_set<L
 
 }
 
+/**************** constant_prop() ****************/
+/* see optimizer.h for description */
 bool constant_prop(LLVMValueRef fn, unordered_set<LLVMValueRef> s){
+  // compute in 
   unordered_map<LLVMBasicBlockRef, unordered_set<LLVMValueRef>> in = compute_in_out(fn, s);
-
+  // call check load instructions 
   return check_loadInstructions(fn, in);
 
 }
 
+/**************** check_loadInstructions() ****************/
+/* see optimizer.h for description */
 bool check_loadInstructions(LLVMValueRef fn, unordered_map<LLVMBasicBlockRef, unordered_set<LLVMValueRef>> in){
+  // initialize change 
   bool changed = false; 
-  for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; bb = LLVMGetNextBasicBlock(bb)){
+  // iterate through each basic block 
+  for (LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
+          bb = LLVMGetNextBasicBlock(bb)){
+    // set R to IN[B]
     unordered_set<LLVMValueRef> r = in[bb];
+    // initialize to delete set 
     unordered_set<LLVMValueRef> to_delete = unordered_set<LLVMValueRef>(); 
-
-    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction; instruction = LLVMGetNextInstruction(instruction)){
+    // iterate through each instruction 
+    for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); instruction; 
+            instruction = LLVMGetNextInstruction(instruction)){
+      // if store instruction 
       if (LLVMIsAStoreInst(instruction)){
+        // insert store instruction 
+        r.insert(instruction);
+        // iterate through each instruction in R
         unordered_set<LLVMValueRef>::iterator it = begin(r);
+        // while not at end 
         while (it != end(r)){
+          // get next instruction in R
           LLVMValueRef instructionB = *it; 
+          // if killed by instruction 
           if (LLVMGetOperand(instructionB, 0) == instruction){
+            // remove from R
             it = r.erase(it);
-          } else {
+
+          } 
+          // else 
+          else {
+            // increment iterator 
             ++it; 
+
           }
         }
-        r.insert(instruction);
       }
+      // if is a load instruction 
       if (LLVMIsALoadInst(instruction)){
+        // find all loads 
         unordered_set<LLVMValueRef> loads = find_loads(instruction, r);
-        if (loads.empty()) continue; 
+        // if empty 
+        if (loads.empty()){
+          // continue 
+          continue; 
 
+        }
+        // get constant 
         LLVMValueRef const_op = LLVMGetOperand(*(loads.begin()), 0);
         long constant = LLVMConstIntGetSExtValue(const_op);
+        // replace all uses with constant in store 
         LLVMReplaceAllUsesWith(instruction, LLVMConstInt(LLVMInt32Type(), constant, 1));
+        // set flag to true 
         changed = true; 
+        // add load to delete
         to_delete.insert(instruction); 
 
       }
-
-
     }
+    // for each instruction in to delete
     for (LLVMValueRef i : to_delete){
+      // ersae from parent
       printf("const_prop deleteing\n");
       LLVMInstructionEraseFromParent(i);
+
     }
+    // reset to delete 
     to_delete = unordered_set<LLVMValueRef>(); 
 
   }
+  // return flag 
   return changed; 
 
 }
@@ -494,36 +555,27 @@ LLVMModuleRef optimize_mod(LLVMModuleRef m){
   bool sub_changed = true; 
   bool dead_changed = true; 
   bool const_changed = true;   
-  bool const_prop = true; 
   // loop through functions 
   for (LLVMValueRef function =  LLVMGetFirstFunction(m); function != NULL; 
           function = LLVMGetNextFunction(function)) {     
-    // loop through basic blocks 
-    // reset bools 
+    // vector to check seen instructions 
     vector<char*> *slist;
-	  slist = new vector<char*> ();
-    
-  
+	  slist = new vector<char*> ();  
+    // loop through basic blocks 
     for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(function); block != NULL; 
             block = LLVMGetNextBasicBlock(block)){
-      // vector to check seen instructions 
-      
       // while either return true 
       sub_changed = true; 
       dead_changed = true; 
       const_changed = true;  
-      const_prop = true; 
       unordered_set<LLVMValueRef> s = compute_set_s(function);
       while(sub_changed || dead_changed || const_changed) {
         // call each function 
         sub_changed = common_sub_expr(block, slist);
         dead_changed = dead_code_elimination(block);  
-        
-        
         constant_prop(function, s);
         const_changed = const_folding(block);
         
-
       } 
     }
   } 
