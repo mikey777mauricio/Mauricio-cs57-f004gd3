@@ -5,6 +5,7 @@
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
 #include "optimizer.h"
+#include "codegen.h"
 
 #define prt(x) if(x) { printf("%s\n", x); }
 
@@ -98,6 +99,7 @@ int main(int argc, char** argv)
 
     char** error; 
     LLVMPrintModuleToFile(n, "my_test.ll", error);
+    code_gen(n);
 
 
 	}
