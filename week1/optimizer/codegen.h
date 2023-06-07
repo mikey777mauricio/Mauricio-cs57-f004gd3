@@ -12,6 +12,8 @@
 #define CODEGEN_H
 #include <cstddef>
 #include <bits/stdc++.h>
+#include <iostream>     // std::cout
+#include <algorithm>
 
 #include<vector>
 #include<unordered_set> 
@@ -68,7 +70,7 @@ void compute_liveness(LLVMBasicBlockRef bb,
  * Caller is responsible for:
  *   nothing
  */
-unordered_map<LLVMValueRef, int> register_allocation(LLVMValueRef fn);
+unordered_map<LLVMValueRef, int> register_allocation(LLVMModuleRef m);
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -108,7 +110,7 @@ vector<LLVMValueRef> sort_list(unordered_map<LLVMValueRef, pair<int, int>> live_
  * Caller is responsible for:
  *   nothing
  */
-LLVMValueRef find_spill(unordered_map<LLVMValueRef, int> reg_map, vector<LLVMValueRef> sorted);
+LLVMValueRef find_spill(unordered_map<LLVMValueRef, int> &reg_map, vector<pair<LLVMValueRef, pair<int, int>>> &sorted_list);
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -128,7 +130,7 @@ LLVMValueRef find_spill(unordered_map<LLVMValueRef, int> reg_map, vector<LLVMVal
  * Caller is responsible for:
  *   nothing
  */
-unordered_map<LLVMBasicBlockRef, const char*> createBBLabels(LLVMValueRef fn);
+unordered_map<LLVMBasicBlockRef, char*> create_bb_labels(LLVMValueRef func);
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -148,7 +150,7 @@ unordered_map<LLVMBasicBlockRef, const char*> createBBLabels(LLVMValueRef fn);
  * Caller is responsible for:
  *   nothing
  */
-void printDirectives(const char* label); 
+void print_directives(FILE* fp, int local_mem, bool ebx_used); 
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -168,7 +170,7 @@ void printDirectives(const char* label);
  * Caller is responsible for:
  *   nothing
  */
-void printFunctionEnd();
+void print_function_end(FILE* fp, bool ebx_used);
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -188,7 +190,7 @@ void printFunctionEnd();
  * Caller is responsible for:
  *   nothing
  */
-unordered_map<LLVMValueRef,int> getOffsetMap(LLVMValueRef fn);
+int get_offset_map(LLVMValueRef func, unordered_map<LLVMValueRef, int> &offset_map, unordered_map<LLVMValueRef, int> &reg_map);
 
 /**************** common_sub_expr() ****************/
 /* common_sub_expr(): Goes through instructions in each basic block
@@ -208,6 +210,10 @@ unordered_map<LLVMValueRef,int> getOffsetMap(LLVMValueRef fn);
  * Caller is responsible for:
  *   nothing
  */
-void code_gen(LLVMModuleRef m);
+void codegen(LLVMModuleRef m, FILE*fp);
 
+void check_instruction(LLVMValueRef instr, unordered_map<LLVMBasicBlockRef, char*> bb_labels, unordered_map<LLVMValueRef, int> offset_map, unordered_map<LLVMValueRef, int> reg_map, bool ebx_used, FILE*fp); 
+char *get_cond_jump(LLVMIntPredicate pred);
+char *get_reg(int reg_num);
+char *get_arith_op(LLVMOpcode opcode);
 #endif

@@ -262,10 +262,10 @@ std::unordered_set<LLVMValueRef> compute_gen(LLVMBasicBlockRef block){
           instruction = LLVMGetNextInstruction(instruction)){
     // if store instruction 
     if (LLVMIsAStoreInst(instruction)){
-    // get address of store 
-     LLVMValueRef address = LLVMGetOperand(instruction, 1);
-     // add to gen map 
-     gen[address] = instruction; 
+      // get address of store 
+      LLVMValueRef address = LLVMGetOperand(instruction, 1);
+      // add to gen map 
+      gen[address] = instruction; 
 
     }
   }
@@ -309,7 +309,7 @@ std::unordered_set<LLVMValueRef> compute_set_s(LLVMValueRef fn){
 
 }
 
-/**************** const_kill() ****************/
+/**************** compute_kill() ****************/
 /* see optimizer.h for description */
 std::unordered_set<LLVMValueRef> compute_kill(LLVMBasicBlockRef block, std::unordered_set<LLVMValueRef> s_set){
   // initialize kill set
@@ -351,13 +351,8 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
   // iterate through each basic block 
   for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
           bb = LLVMGetNextBasicBlock(bb)){
-    // initialize each IN[B] to empty set 
+    // set each IN[B] to empty set 
     in[bb] = unordered_set<LLVMValueRef> ();
-
-  }
-  // iterate through each basic black 
-  for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(fn); bb; 
-          bb = LLVMGetNextBasicBlock(bb)){
     // set each OUT[B] to gen
     out[bb] = compute_gen(bb);
 
@@ -387,6 +382,8 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
             bb = LLVMGetNextBasicBlock(bb)){
       // initialize in set 
       unordered_set<LLVMValueRef> in_bb; 
+      // compute kill 
+      unordered_set<LLVMValueRef> kill = compute_kill(bb, s);
       // for each bb in predecessors
       for (LLVMBasicBlockRef p : predecessors[bb]){
         // insert all the OUT[p]
@@ -399,8 +396,8 @@ std::unordered_map<LLVMBasicBlockRef, std::unordered_set<LLVMValueRef>> compute_
       unordered_set<LLVMValueRef> old = out[bb];
       // get in of bb to cmpute in - kill 
       unordered_set<LLVMValueRef> sub = in[bb];
-      // compute in - kill 
-      for (LLVMValueRef v : compute_kill(bb, s)){
+      // compute in - kill *********
+      for (LLVMValueRef v : kill){
         sub.erase(v);
 
       }
@@ -486,12 +483,10 @@ bool check_loadInstructions(LLVMValueRef fn, unordered_map<LLVMBasicBlockRef, un
             instruction = LLVMGetNextInstruction(instruction)){
       // if store instruction 
       if (LLVMIsAStoreInst(instruction)){
-        // insert store instruction 
-        r.insert(instruction);
-        // iterate through each instruction in R
+        // iterate through each instruction in R 
         unordered_set<LLVMValueRef>::iterator it = begin(r);
         // while not at end 
-        while (it != end(r)){
+        while (end(r) != NULL){
           // get next instruction in R
           LLVMValueRef instructionB = *it; 
           // if killed by instruction 
@@ -506,6 +501,8 @@ bool check_loadInstructions(LLVMValueRef fn, unordered_map<LLVMBasicBlockRef, un
             ++it; 
 
           }
+          // insert store instruction 
+          r.insert(instruction);
         }
       }
       // if is a load instruction 
@@ -561,19 +558,21 @@ LLVMModuleRef optimize_mod(LLVMModuleRef m){
     // vector to check seen instructions 
     vector<char*> *slist;
 	  slist = new vector<char*> ();  
+    // call constant prop 
+    unordered_set<LLVMValueRef> s = compute_set_s(function);
+    constant_prop(function, s);
     // loop through basic blocks 
     for (LLVMBasicBlockRef block = LLVMGetFirstBasicBlock(function); block != NULL; 
             block = LLVMGetNextBasicBlock(block)){
-      // while either return true 
+      // set all booleans 
       sub_changed = true; 
       dead_changed = true; 
       const_changed = true;  
-      unordered_set<LLVMValueRef> s = compute_set_s(function);
+      // while either return true 
       while(sub_changed || dead_changed || const_changed) {
         // call each function 
         sub_changed = common_sub_expr(block, slist);
         dead_changed = dead_code_elimination(block);  
-        constant_prop(function, s);
         const_changed = const_folding(block);
         
       } 

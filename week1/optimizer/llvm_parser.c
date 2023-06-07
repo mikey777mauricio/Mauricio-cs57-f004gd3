@@ -89,6 +89,7 @@ int main(int argc, char** argv)
 	if (argc == 2){
 		m = createLLVMModel(argv[1]);
     n = optimize_mod(m);
+ 
 	}
 	else{
 		m = NULL;
@@ -99,7 +100,10 @@ int main(int argc, char** argv)
 
     char** error; 
     LLVMPrintModuleToFile(n, "my_test.ll", error);
-    code_gen(n);
+    printf("finished\n");
+    FILE *fp = fopen("code_gen.s", "w");
+    codegen(n, fp);
+    fclose(fp);
 
 
 	}
