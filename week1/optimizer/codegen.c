@@ -23,7 +23,9 @@ void compute_liveness(LLVMBasicBlockRef bb, unordered_map<LLVMValueRef, int> ins
           instruction = LLVMGetNextInstruction(instruction)){
     // check if not an alloca instruction
     if (!LLVMIsAAllocaInst(instruction)){
+      // assign index
       inst_index[instruction] = index; 
+      // increment index
       index++; 
     
     }
@@ -40,8 +42,8 @@ void compute_liveness(LLVMBasicBlockRef bb, unordered_map<LLVMValueRef, int> ins
       for (LLVMUseRef use = LLVMGetFirstUse(instruction); use; use = LLVMGetNextUse(use)){
         second_r = max(second_r, inst_index[LLVMGetUser(use)]);
       }
-      // set second instruction value to max 
-      live_range[instruction].second = second_r;
+    // set second instruction value to max 
+    live_range[instruction].second = second_r;
     
   }
 }
@@ -97,20 +99,17 @@ unordered_map<LLVMValueRef, int> register_allocation(LLVMModuleRef m){
           LLVMValueRef first_op = LLVMGetOperand(instruction, 0);
           // if it has a physical register 
           if (reg_map[first_op] != -1 && live_range[first_op].second == inst_index[instruction]){
-              // add instruction to R
-              reg_map[instruction] = reg_map[first_op];
-              // get second operand 
-              LLVMValueRef second_op = LLVMGetOperand(instruction,1);
-              // if liveness range ends and in reg map 
-              if (live_range[second_op].second == inst_index[instruction] 
-                      && reg_map[second_op] != -1){
-                
-                  registers.insert(reg_map[second_op]);
+            // add instruction to R
+            reg_map[instruction] = reg_map[first_op];
+            // get second operand 
+            LLVMValueRef second_op = LLVMGetOperand(instruction,1);
+            // if liveness range ends and in reg map 
+            if (live_range[second_op].second == inst_index[instruction] 
+                    && reg_map[second_op] != -1){
+              // insert reg into available 
+              registers.insert(reg_map[second_op]);
 
-                
-              }
-            
-
+            }
           }
         }
         // if a physical register R is available 
@@ -122,10 +121,9 @@ unordered_map<LLVMValueRef, int> register_allocation(LLVMModuleRef m){
             LLVMValueRef op = LLVMGetOperand(instruction, i);
             // if ends and has physical register 
             if (live_range[op].second == inst_index[instruction] && reg_map[op] != -1){
-              
-                registers.insert(reg_map[op]);
-
-              
+              // insert reg
+              registers.insert(reg_map[op]);
+            
             }
           }
         }  
@@ -165,7 +163,9 @@ unordered_map<LLVMValueRef, int> register_allocation(LLVMModuleRef m){
       }
     }
   }
+  // test 
   printf("finished reg\n");
+  // return 
   return reg_map; 
 }
 
@@ -218,35 +218,37 @@ LLVMValueRef find_spill(unordered_map<LLVMValueRef, int> &reg_map, vector<pair<L
 
 }
 
+/**************** check_instruction() ****************/
+/* see codegen.h for description */ 
 void check_instruction(LLVMValueRef instruction, unordered_map<LLVMBasicBlockRef, 
         char*> bb_labels, unordered_map<LLVMValueRef, int> offset_map, unordered_map<LLVMValueRef, 
         int> reg_map, bool ebx_used, FILE* fp) {
   // if return instruction 
   if (LLVMIsAReturnInst(instruction)) {
-      // get operand A
-      LLVMValueRef A = LLVMGetOperand(instruction, 0);
-      // if A is a constant 
-      if (LLVMIsAConstant(A)) {
-        char *s = LLVMPrintValueToString(A);
-        char *t = s + 4;
-        // emit movl $A, %eax
-        fprintf(fp, "\tmovl\t$%s, %%eax\n", t);
-        LLVMDisposeMessage(s);
-        
-        // if temp and in mem 
-      } else if (reg_map[A] == -1) {
-        // fet off set 
-        int k = offset_map[A] * -1;
-        // emit movl k(%ebp), %eax 
-        fprintf(fp,"\tmovl\t%d(%%ebp), %%eax\n", k);
-        
-        // else
-      } else {
-        // if temp and physical reg
-          char *r = get_reg(reg_map[A]);
-          // emit movl %exx, %eax
-          fprintf(fp, "\tmovl\t%%%s, %%eax\n", r);
-          free(r);
+    // get operand A
+    LLVMValueRef A = LLVMGetOperand(instruction, 0);
+    // if A is a constant 
+    if (LLVMIsAConstant(A)) {
+      char *s = LLVMPrintValueToString(A);
+      char *t = s + 4;
+      // emit movl $A, %eax
+      fprintf(fp, "\tmovl\t$%s, %%eax\n", t);
+      LLVMDisposeMessage(s);
+      
+      // if temp and in mem 
+    } else if (reg_map[A] == -1) {
+      // fet off set 
+      int k = offset_map[A] * -1;
+      // emit movl k(%ebp), %eax 
+      fprintf(fp,"\tmovl\t%d(%%ebp), %%eax\n", k);
+      
+      // else
+    } else {
+      // if temp and physical reg
+        char *r = get_reg(reg_map[A]);
+        // emit movl %exx, %eax
+        fprintf(fp, "\tmovl\t%%%s, %%eax\n", r);
+        free(r);
 
       }
     // call printFunctionEnd
@@ -318,7 +320,7 @@ void check_instruction(LLVMValueRef instruction, unordered_map<LLVMBasicBlockRef
     fprintf(fp, "\tpushl\t%%ebx\n");
     fprintf(fp, "\tpushl\t%%ecx\n");
     fprintf(fp, "\tpushl\t%%edx\n");
-    
+    // get func name
     LLVMValueRef func = LLVMGetCalledValue(instruction);
     int num_params = LLVMCountParams(func);
     // if func has param P
@@ -554,7 +556,8 @@ void codegen(LLVMModuleRef m, FILE*fp) {
   }
 }
 
-
+/**************** get_offset_map() ****************/
+/* see codegen.h for description */ 
 int get_offset_map(LLVMValueRef fn, unordered_map<LLVMValueRef, int> &offset_map, unordered_map<LLVMValueRef, int> &reg_map) {
   // initialize memory position to 0 
   int mem = 0;
@@ -603,34 +606,37 @@ int get_offset_map(LLVMValueRef fn, unordered_map<LLVMValueRef, int> &offset_map
       // if no register 
       if (reg_map[instruction] == -1) {
         printf("test in get reg3\n");
-          // if is a load 
-          if (LLVMIsALoadInst(instruction)) {
-            // assign pos in offset map 
-            offset_map[instruction] = offset_map[first_op];
+        // if is a load 
+        if (LLVMIsALoadInst(instruction)) {
+          // assign pos in offset map 
+          offset_map[instruction] = offset_map[first_op];
 
+        }
+        // if arithmetic 
+        else if (LLVMIsAStoreInst(LLVMGetUser(LLVMGetFirstUse(instruction)))) {
+          // get user of store instruction 
+          LLVMValueRef u = (LLVMGetUser(LLVMGetFirstUse(instruction)));
+          // if first op in memory 
+          if (offset_map[LLVMGetOperand(u, 1)] == offset_map[first_op]){
+            // assign instruction to mem 
+            offset_map[instruction] = offset_map[first_op];
           }
-          // if arithmetic 
-          else if (LLVMIsAStoreInst(LLVMGetUser(LLVMGetFirstUse(instruction)))) {
-            // get user of store instruction 
-            LLVMValueRef u = (LLVMGetUser(LLVMGetFirstUse(instruction)));
-            // if first op in memory 
-            if (offset_map[LLVMGetOperand(u, 1)] == offset_map[first_op]){
-              // assign instruction to mem 
-              offset_map[instruction] = offset_map[first_op];
-            }
-            // if second in op 
-            else if (offset_map[LLVMGetOperand(u, 1)] == offset_map[second_op]){
-              // assign instruction to mem
-              offset_map[instruction] = offset_map[second_op];
-            }
-          }
-          // else put in mem 
-          else {
-            mem += 4;
-            offset_map[instruction] = mem;
+          // if second in op 
+          else if (offset_map[LLVMGetOperand(u, 1)] == offset_map[second_op]){
+            // assign instruction to mem
+            offset_map[instruction] = offset_map[second_op];
           }
         }
+        // else put in mem 
+        else {
+          // increment mem
+          mem += 4;
+          // assign offset 
+          offset_map[instruction] = mem;
+
+        }
       }
+    }
   }
   printf("test in get reg4\n");
   // return pos 

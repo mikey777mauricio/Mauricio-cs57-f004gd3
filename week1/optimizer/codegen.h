@@ -4,7 +4,8 @@
  * codegen.h - header file for 'optimizer' module 
  * 
  * the `codegen` module implements register allocation and 
- *   generates machine assembly code given LLVM module 
+ *   generates machine assembly code given LLVMModuleRef to build 
+ *   backend of compiler  
  *
  */
 /**************** Link Section ****************/
@@ -14,13 +15,11 @@
 #include <bits/stdc++.h>
 #include <iostream>     // std::cout
 #include <algorithm>
-
-#include<vector>
-#include<unordered_set> 
-#include<utility> 
+#include <vector>
+#include <unordered_set> 
+#include <utility> 
 #include <unordered_map>
 using namespace std;
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -31,189 +30,178 @@ using namespace std;
 
 /**************** functions ****************/
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** compute_liveness() ****************/
+/* compute_liveness(): Goes through instructions in each basic block
+ *  and fills liveness and instruction index maps 
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: basic block, instruction index map, live range map 
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  nothing
+ * 
  * Caller is responsible for:
  *   nothing
  */
 void compute_liveness(LLVMBasicBlockRef bb, 
         unordered_map<int, LLVMValueRef>& inst_index, unordered_map<LLVMValueRef, pair<int, int>>& live_range);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** register_allocation() ****************/
+/* register_allocation(): Goes through instructions in each basic block
+ *  and assigns registers and fills register map 
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: LLVMModuleRef
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  register map 
+ * 
  * Caller is responsible for:
  *   nothing
  */
 unordered_map<LLVMValueRef, int> register_allocation(LLVMModuleRef m);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** find_spill() ****************/
+/* find_spill(): Goes through instructions fills spill 
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: register map and sorted list
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
- * Caller is responsible for:
- *   nothing
- */
-vector<LLVMValueRef> sort_list(unordered_map<LLVMValueRef, pair<int, int>> live_range); 
-
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+ *  A LLVMValueRef, V, that has a physical register assigned to it
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
- * 
- * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
  * Caller is responsible for:
  *   nothing
  */
 LLVMValueRef find_spill(unordered_map<LLVMValueRef, int> &reg_map, vector<pair<LLVMValueRef, pair<int, int>>> &sorted_list);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** create_bb_labels() ****************/
+/* create_bb_labels(): This function populates a map where key is a 
+ *  LLVMBasicBlockRef and associated value is a char * that you can 
+ *  use as label when generating code.
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: LLVMValueRef fn
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  map of bb and labels 
+ * 
  * Caller is responsible for:
  *   nothing
  */
-unordered_map<LLVMBasicBlockRef, char*> create_bb_labels(LLVMValueRef func);
+unordered_map<LLVMBasicBlockRef, char*> create_bb_labels(LLVMValueRef fn);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** print_directives() ****************/
+/* print_directives(): This function emits the required 
+ *  directives for your function and also assembly instructions 
+ *  to push callers %ebp and update the %ebp to current value of %esp.
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: FILE* fp, int mem, bool ebx_used
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  nothing
+ * 
  * Caller is responsible for:
  *   nothing
  */
 void print_directives(FILE* fp, int local_mem, bool ebx_used); 
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** print_function_end() ****************/
+/* print_function_end(): This function emits the assembly instructions 
+ *   to restore the value of %esp and %ebp, and the ret instruction. 
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: FILE* fp, bool ebx_used 
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  Nothing
+ * 
  * Caller is responsible for:
- *   nothing
+ *  Nothing
  */
 void print_function_end(FILE* fp, bool ebx_used);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** get_offset_map() ****************/
+/* get_offset_map(): This function will populate the global map 
+ *  offset_map. This map associates each value(instruction) to the 
+ *  memory offset of that value from %ebp. The keys in this map are 
+ *  LLVMValueRef and values are integers. This function will also 
+ *  initialize an integer variable localMem that indicates the number 
+ *  of bytes required to store the local values.
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: LLVMValueRef fn, unordered_map<LLVMValueRef, int> &offset_map,
+ *  unordered_map<LLVMValueRef, int> &reg_map
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  int to represent local mem address
+ * 
  * Caller is responsible for:
- *   nothing
+ *  nothing
  */
 int get_offset_map(LLVMValueRef func, unordered_map<LLVMValueRef, int> &offset_map, unordered_map<LLVMValueRef, int> &reg_map);
 
-/**************** common_sub_expr() ****************/
-/* common_sub_expr(): Goes through instructions in each basic block
- *  and identifies pairs of instructions that have same opcode and operands. 
- *  With those pairings will modify all uses of latest instruction to point
- *  to prior identical instruction. 
+/**************** codegen() ****************/
+/* codegen(): Goes through instructions in each basic block
+ *  and generates machine assembly code from LLVMIR
  * 
- * Caller provides: LLVMBasicBlockRef bb, basic block 
+ * Caller provides: LLVMModuleRef m, FILE*fp
  * 
  * We return:
- *  true: if modified instructions
- *  false: if no optimization occured
- * We guarantee:
- *   Instructions will not be modified if there is a store 
- *    instruction modifying any of their operands before the
- *    identical instruction is called 
+ *  nothing
+ * 
  * Caller is responsible for:
- *   nothing
+ *  closing file pointer
  */
 void codegen(LLVMModuleRef m, FILE*fp);
 
+/**************** check_instruction() ****************/
+/* check_instruction(): Checks each instruction and emits 
+ *  assembly code 
+ * 
+ * Caller provides:LLVMValueRef instr, unordered_map<LLVMBasicBlockRef, 
+ *  char*> bb_labels, unordered_map<LLVMValueRef, int> offset_map, 
+ *  unordered_map<LLVMValueRef, int> reg_map, bool ebx_used, FILE*fp
+ * 
+ * We return:
+ *  nothing
+ * 
+ * Caller is responsible for:
+ *  Closing file pointer
+ */
 void check_instruction(LLVMValueRef instr, unordered_map<LLVMBasicBlockRef, char*> bb_labels, unordered_map<LLVMValueRef, int> offset_map, unordered_map<LLVMValueRef, int> reg_map, bool ebx_used, FILE*fp); 
+
+/**************** get_cond_jump() ****************/
+/* get_cond_jump(): Given pred, returns directive for cond jump 
+ *  
+ * Caller provides: LLVMIntPredicate pred
+ * 
+ * We return:
+ *  nothing
+ * 
+ * Caller is responsible for:
+ *  closing file pointer
+ */
 char *get_cond_jump(LLVMIntPredicate pred);
-char *get_reg(int reg_num);
-char *get_arith_op(LLVMOpcode opcode);
+
+/**************** get_reg() ****************/
+/* get_reg(): Maps int to corresponding register 
+ * 
+ * Caller provides: int reg_num
+ * 
+ * We return:
+ *  char* register name 
+ * 
+ * Caller is responsible for:
+ *  nothing
+ */
+char* get_reg(int reg_num);
+
+/**************** get_arith_op() ****************/
+/* get_arith_op(): Returns directive for corresponding 
+ *  opcode 
+ * 
+ * Caller provides: LLVMOpcode opcode 
+ * 
+ * We return:
+ *  char* arithmetic 
+ * 
+ * Caller is responsible for:
+ *  nothing
+ */
+char* get_arith_op(LLVMOpcode opcode);
 #endif
